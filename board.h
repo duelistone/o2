@@ -1,0 +1,23 @@
+#ifndef __BOARD_H__
+#define __BOARD_H__
+// board.h
+
+// Functions helpful for working with boards.
+// A board consists of a white bitboard and a black bitboard,
+// along with an optional zobrist hash.
+// However, no struct will be defined here...two or three arguments 
+// should be passed instead.
+
+#include <stdio.h>
+#include <stdint.h>
+#include "defs.h"
+#include "stdlib.h"
+
+u64 findLegalMoves(u64 black, u64 white);
+u64 doMove(u64 black, u64 white, u8 move);
+u64 frontier(u64 black, u64 white);
+u32 eval(u64 black, u64 white);
+void printBoard(u64 black, u64 white);
+void printBoard2(u64 black, u64 white);
+
+#endif
