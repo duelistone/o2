@@ -1,3 +1,5 @@
+#ifndef __DEFS_H__
+#define __DEFS_H__
 // defs.h
 
 // Some global preprocessor definitions
@@ -181,3 +183,5 @@
 // The number of discs after which the endgame is considered to start
 // endgameAlphabeta should not be called at an earlier depth.
 #define ENDGAME_START 41
+
+#endif
