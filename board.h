@@ -16,7 +16,8 @@
 u64 findLegalMoves(u64 black, u64 white);
 u64 doMove(u64 black, u64 white, u8 move);
 u64 frontier(u64 black, u64 white);
-u32 eval(u64 black, u64 white);
+double frontierScore(u64 black, u64 white);
+int eval(u64 black, u64 white);
 void printBoard(u64 black, u64 white);
 void printBoard2(u64 black, u64 white);
 

@@ -598,10 +598,10 @@ u64 doMove(u64 black, u64 white, u8 square) {
 
 u64 frontier(u64 black, u64 white) {
     u64 empty = ~(black | white);
-    u64 frontierBlack = SHIFT_RIGHT(empty) & ~(RIGHT_FILTER | LEFT_FILTER) & black;
-    frontierBlack |= SHIFT_LEFT(empty) & ~(LEFT_FILTER | RIGHT_FILTER) & black;
-    frontierBlack |= SHIFT_UP(empty) & ~(UP_FILTER | DOWN_FILTER) & black;
-    frontierBlack |= SHIFT_DOWN(empty) & ~(DOWN_FILTER | UP_FILTER) & black;
+    u64 frontierBlack = SHIFT_RIGHT(empty) & (RIGHT_FILTER & LEFT_FILTER) & black;
+    frontierBlack |= SHIFT_LEFT(empty) & (LEFT_FILTER & RIGHT_FILTER) & black;
+    frontierBlack |= SHIFT_UP(empty) & (UP_FILTER & DOWN_FILTER) & black;
+    frontierBlack |= SHIFT_DOWN(empty) & (DOWN_FILTER & UP_FILTER) & black;
     frontierBlack |= SHIFT_UP_RIGHT(empty) & ~EDGES & black;
     frontierBlack |= SHIFT_UP_LEFT(empty) & ~EDGES & black;
     frontierBlack |= SHIFT_DOWN_RIGHT(empty) & ~EDGES & black;
@@ -609,18 +609,35 @@ u64 frontier(u64 black, u64 white) {
     return frontierBlack;
 }
 
+double frontierScore(u64 black, u64 white) {
+    u64 empty = ~(black | white);
+    int result = PC(SHIFT_RIGHT(empty) & (RIGHT_FILTER & LEFT_FILTER) & black);
+    result += PC(SHIFT_LEFT(empty) & (LEFT_FILTER & RIGHT_FILTER) & black);
+    result += PC(SHIFT_UP(empty) & (UP_FILTER & DOWN_FILTER) & black);
+    result += PC(SHIFT_DOWN(empty) & (DOWN_FILTER & UP_FILTER) & black);
+    result += PC(SHIFT_UP_RIGHT(empty) & ~EDGES & black);
+    result += PC(SHIFT_UP_LEFT(empty) & ~EDGES & black);
+    result += PC(SHIFT_DOWN_RIGHT(empty) & ~EDGES & black);
+    result += PC(SHIFT_DOWN_LEFT(empty) & ~EDGES & black);
+    return result / (7.0 * PC(black));
+}
+
 // Evaluate position to int
 // Assumes the first argument is to move
 // Also assumes a wipeout has not occurred.
-u32 eval(u64 black, u64 white) {
+int eval(u64 black, u64 white) {
     // Frontier
     // Idea: double frontier (2 away and unshielded)?
-    double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
-    double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
+    // Old idea: simple frontier ratio
+    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
+    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
+    // New idea: Weighted frontiers
+    double eeF = frontierScore(white, black) - frontierScore(black, white);
 
-    double ee = 0.1 * (whiteFrontierRatio - blackFrontierRatio) + 0.9 * (PC(black & CORNERS) - PC(white & CORNERS)) / 4;
+    // Corners
+    double eeC = (PC(black & CORNERS) - PC(white & CORNERS)) / 4.0;
 
-    return 1000 * ee;
+    return 1024 * (eeF * 0.5 + eeC * 0.5);
 }
 
 // Print board

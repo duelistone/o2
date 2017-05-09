@@ -94,6 +94,10 @@ int main(int argc, char **argv) {
             }
         }            
 
+        // Logging
+        printBoard2(black, white);
+        fprintf(stderr, "eval %d\n", eval(black, white));
+
         // Make sure cout has been flushed
         fflush(stdout);
 

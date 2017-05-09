@@ -40,6 +40,15 @@ START_TEST(doMove_no_legal_moves)
 }
 END_TEST
 
+START_TEST(frontierScore_early_position)
+{
+    u64 black = D3 | C4 | E4 | F4 | C5 | E6;
+    u64 white = D4 | D5 | E5 | F5 | D6;
+    ck_assert(frontierScore(black, white) == 24 / 42.0);
+    ck_assert(frontierScore(white, black) == 12 / 35.0);
+}
+END_TEST
+
 START_TEST(endgameAlphabeta_totalCount_63)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0));
@@ -142,6 +151,7 @@ Suite * money_suite(void)
     tcase_add_test(tc_core, legal_moves_totalCount_62);
     tcase_add_test(tc_core, doMove_initial_position);
     tcase_add_test(tc_core, doMove_no_legal_moves);
+    tcase_add_test(tc_core, frontierScore_early_position);
     tcase_add_test(tc_core, endgameAlphabeta_totalCount_63);
     tcase_add_test(tc_core, endgameAlphabetaMove_totalCount_63);
     tcase_add_test(tc_core, endgameAlphabetaMove_totalCount_63_no_legal_moves);
