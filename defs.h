@@ -34,6 +34,7 @@
 
 // Extract first nonzero bit
 #define CLZ(x) (__builtin_clzll(x))
+#define CTZ(x) (__builtin_ctzll(x))
 #define FNB(x) (PLAIN_BIT(CLZ(x)))
 
 // Bit for cell corresponding to square x

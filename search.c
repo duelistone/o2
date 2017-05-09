@@ -122,37 +122,28 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
     u64 originalBlack = black;
     u64 originalWhite = white;
 
-    if (TC(black, white) == 63) {
-        // Make move
-        u8 square = CLZ(~(black | white));
-        black = doMove(black, white, square);
-        white &= ~black;
+    // Factor to multiply return value by (1 or -1)
+    int factor = 1;
 
-        // Was move legal?
-        if (black == originalBlack) {
-            // Try white
-            white = doMove(white, black, square);
-            black &= ~white;
-        }
-
-        // Compute result
-        return DD(black, white);
-    }
-        
     // Deal with no legal moves possibility
     u64 lm = findLegalMoves(black, white);
     if (lm == 0) {
-        if (findLegalMoves(white, black) == 0) {
+        lm = findLegalMoves(white, black);
+        if (lm == 0) {
             return DD(black, white);
         }
-        return -endgameAlphabeta(white, black, -beta, -alpha);
+
+        // Swap sides and set factor
+        u64 temp = originalBlack;
+        originalBlack = originalWhite;
+        originalWhite = temp;
+        factor = -1;
     }
 
     // The legal moves will be ordered so that moves giving the opponent
     // less mobility appear first.
 
     // Array for moves, boards, and the number of legal moves each gives
-    // Assumes a maximum of 50 legal moves
     // Each "entry" is 2 * 8 (black and white boards) + 8 (score) = 3 bytes
     u64 arr[(64 - ENDGAME_START) * 3];
 
@@ -187,11 +178,73 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
     // Main alphabeta algorithm
     for (size_t i = 0; alpha < beta && i < numLegalMoves; i++) {
         // Recursive call and update alpha
-        int result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
-        if (result > alpha) alpha = result;
+        int result;
+        if (TC(originalBlack, originalWhite) == 61) {
+            result = -endgameAlphabeta62(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
+        }
+        else {
+            result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
+        }
+        alpha = (result > alpha) ? result : alpha;
     }
 
-    return alpha;
+    return factor * alpha;
+}
+
+int endgameAlphabeta63(u64 black, u64 white) {
+    // Originals
+    u64 originalBlack = black;
+
+    // Make move
+    u8 square = CLZ(~(black | white));
+    black = doMove(black, white, square);
+    white &= ~black;
+
+    // Was move legal?
+    if (black == originalBlack) {
+        // Try white
+        white = doMove(white, black, square);
+        black &= ~white;
+    }
+
+    // Compute result
+    return DD(black, white);
+}
+
+int endgameAlphabeta62(u64 black, u64 white, int alpha, int beta) {
+    int factor = 1;
+    u64 lm = findLegalMoves(black, white);
+    if (lm == 0) {
+        lm = findLegalMoves(white, black);
+        if (lm == 0) {
+            return DD(black, white);
+        }
+
+        // Swap sides and set factor
+        u64 temp = black;
+        black = white;
+        white = temp;
+        factor = -1;
+    }
+
+    // Make move
+    u8 square63 = CLZ(lm);
+    lm ^= BIT(square63);
+    u64 black1 = doMove(black, white, square63);
+    u64 white1 = white & ~black1;
+    int best = -endgameAlphabeta63(white1, black1);
+    if (best >= beta) return factor * beta;
+    
+    if (lm != 0) {
+        // Try other move
+        square63 = CLZ(lm);
+        u64 black2 = doMove(black, white, square63);
+        u64 white2 = white & ~black2;
+        int secondEval = -endgameAlphabeta63(white2, black2);
+        if (secondEval > best) return factor * secondEval;
+    }
+
+    return factor * best;
 }
 
 int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {

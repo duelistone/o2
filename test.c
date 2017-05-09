@@ -44,7 +44,7 @@ START_TEST(endgameAlphabeta_totalCount_63)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0));
     u64 white = BIT(63);
-    ck_assert_int_gt(endgameAlphabeta(black, white, -1, 1), 0);
+    ck_assert_int_gt(endgameAlphabeta63(black, white), 0);
 }
 END_TEST
 
@@ -72,11 +72,11 @@ START_TEST(endgameAlphabeta_totalCount_62)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0) | BIT(7));
     u64 white = BIT(63);
-    ck_assert_int_gt(endgameAlphabeta(black, white, -1, 1), 0);
+    ck_assert_int_gt(endgameAlphabeta62(black, white, -1, 1), 0);
 }
 END_TEST
 
-// Best time: 0.003786
+// Best time: 0.0032 sec
 START_TEST(ffo_endgame_40)
 {
     u64 black = C3 | D3 | C4 | H1 | H2 | H3 | H4 | H5 | H6 | H7 | G4 | G5;
@@ -87,7 +87,7 @@ START_TEST(ffo_endgame_40)
 }
 END_TEST
 
-// Best time: 26 sec
+// Best time: 18.5 sec
 START_TEST(ffo_endgame_41)
 {
     u64 black = A4 | B4 | B5 | C4 | C5 | C6 | D4 | D7 | E4 | E6 | E7 | F5
@@ -97,6 +97,32 @@ START_TEST(ffo_endgame_41)
               | F7 | G3 | G4 | G8;
 
     ck_assert_int_eq(endgameAlphabeta(black, white, -1, 1), 0);
+}
+END_TEST
+
+// Best time: 101 ns / call
+START_TEST(endgameAlphabeta_totalCount_62x7)
+{
+    u64 black = -1ull & ~(BIT(63) | BIT(0) | BIT(7));
+    u64 white = BIT(63);
+    int passed = 1;
+    for (int i = 0; i < 10000000; i++) {
+        passed *= (endgameAlphabeta62(black, white, -1, 1) > 0);
+    }
+    ck_assert_int_eq(passed, 1);
+}
+END_TEST
+    
+// Best time: 20.6 ns / call
+START_TEST(endgameAlphabeta_totalCount_63x7)
+{
+    u64 black = -1ull & ~(BIT(63) | BIT(0));
+    u64 white = BIT(63);
+    int passed = 1;
+    for (int i = 0; i < 10000000; i++) {
+        passed *= (endgameAlphabeta63(black, white) > 0);
+    }
+    ck_assert_int_eq(passed, 1);
 }
 END_TEST
 
@@ -122,6 +148,8 @@ Suite * money_suite(void)
     tcase_add_test(tc_core, endgameAlphabeta_totalCount_62);
     tcase_add_test(tc_core, ffo_endgame_40);
     tcase_add_test(tc_core, ffo_endgame_41);
+    tcase_add_test(tc_core, endgameAlphabeta_totalCount_62x7);
+    tcase_add_test(tc_core, endgameAlphabeta_totalCount_63x7);
 
     suite_add_tcase(s, tc_core);
 
