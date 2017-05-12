@@ -619,12 +619,14 @@ double frontierScore(u64 black, u64 white) {
     result += PC(SHIFT_UP_LEFT(empty) & ~EDGES & black);
     result += PC(SHIFT_DOWN_RIGHT(empty) & ~EDGES & black);
     result += PC(SHIFT_DOWN_LEFT(empty) & ~EDGES & black);
-    return result / (7.0 * PC(black));
+    u64 fro = frontier(black, white);
+    u64 internal = black & ~fro;
+    return (result - 2 * PC(internal & ~EDGES) - PC(internal & EDGES))/ (7.0 * PC(black)) + PC(fro) / 64.0;
 }
 
 // Evaluate position to int
 // Assumes the first argument is to move
-// Also assumes a wipeout has not occurred.
+// Also assumes a wipeout has not occurred, and that there is a legal move
 int eval(u64 black, u64 white) {
     // Frontier
     // Idea: double frontier (2 away and unshielded)?
@@ -635,10 +637,68 @@ int eval(u64 black, u64 white) {
     double eeF = frontierScore(white, black) - frontierScore(black, white);
 
     // Corners
-    double eeC = (PC(black & CORNERS) - PC(white & CORNERS)) / 4.0;
+    double eeC = (PC(black & CORNERS) - PC(white & CORNERS));
+    // Score for corner patterns
+    #define SCP(x) ((black & (x)) == (x)) - ((white & (x)) == (x));
+    eeC += SCP(A1 | B1);
+    eeC += SCP(A1 | A2);
+    eeC += SCP(H1 | G1);
+    eeC += SCP(H1 | H2);
+    eeC += SCP(A8 | B8);
+    eeC += SCP(A8 | A7);
+    eeC += SCP(H8 | G8);
+    eeC += SCP(H8 | H7);
+    eeC += SCP(A1 | B1 | C1);
+    eeC += SCP(A1 | A2 | A3);
+    eeC += SCP(H1 | G1 | F1);
+    eeC += SCP(H1 | H2 | H3);
+    eeC += SCP(A8 | B8 | C8);
+    eeC += SCP(A8 | A7 | A6);
+    eeC += SCP(H8 | G8 | F8);
+    eeC += SCP(H8 | H7 | H6);
+    eeC /= 4.0;
 
-    return 1024 * (eeF * 0.5 + eeC * 0.5);
+    // Mobility
+    int lmBlack = PC(findLegalMoves(black, white));
+    int lmWhite = PC(findLegalMoves(white, black));
+    double eeM = (lmBlack - lmWhite - 1) / (double) (lmBlack + lmWhite); // The -1 is a penalty for having to move
+
+    return 1024 * (eeF * 0.3 + eeC * 0.4 + eeM * 0.3);
 }
+
+// Print eval information for debugging
+void printEval(u64 black, u64 white) {
+    // Frontier
+    // Idea: double frontier (2 away and unshielded)?
+    // Old idea: simple frontier ratio
+    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
+    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
+    // New idea: Weighted frontiers
+    double eeF = frontierScore(white, black) - frontierScore(black, white);
+
+    // Corners
+    double eeC = (PC(black & CORNERS) - PC(white & CORNERS));
+    eeC += ((black & (A1 | B1)) == (A1 | B1)) - ((white & (A1 | B1)) == (A1 | B1));
+    eeC += ((black & (A1 | A2)) == (A1 | A2)) - ((white & (A1 | A2)) == (A1 | A2));
+    eeC += ((black & (H1 | G1)) == (H1 | G1)) - ((white & (H1 | G1)) == (H1 | G1));
+    eeC += ((black & (H1 | H2)) == (H1 | H2)) - ((white & (H1 | H2)) == (H1 | H2));
+    eeC += ((black & (A8 | B8)) == (A8 | B8)) - ((white & (A8 | B8)) == (A8 | B8));
+    eeC += ((black & (A8 | A7)) == (A8 | A7)) - ((white & (A8 | A7)) == (A8 | A7));
+    eeC += ((black & (H8 | G8)) == (H8 | G8)) - ((white & (H8 | G8)) == (H8 | G8));
+    eeC += ((black & (H8 | H7)) == (H8 | H7)) - ((white & (H8 | H7)) == (H8 | H7));
+    eeC /= 4.0;
+    
+    // Mobility
+    int lmBlack = PC(findLegalMoves(black, white));
+    int lmWhite = PC(findLegalMoves(white, black));
+    double eeM = (lmBlack - lmWhite - 1) / (double) (lmBlack + lmWhite); // The -1 is a penalty for having to move
+
+    printf("frontier: %f\n", eeF);
+    printf("mobility: %f\n", eeM);
+    printf("corners: %f\n", eeC);
+    printf("Actual eval: %d\n", eval(black, white));
+}
+
 
 // Print board
 void printBoard(u64 black, u64 white) {

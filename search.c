@@ -24,7 +24,8 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Iterative deepening
     if (depth > 1) {
-        u8 firstMove = alphabetaMove(black, white, depth - 1, alpha, beta) & 0xFF;
+        //puts("Depth not 1");
+        u8 firstMove = EXTRACT_MOVE(alphabetaMove(black, white, depth - 1, alpha, beta));
 
         // Try first move
         lm ^= BIT(firstMove);
@@ -44,9 +45,13 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
         black = doMove(originalBlack, originalWhite, index);
         white = originalWhite & ~black;
 
-        // Recursive call and update alpha
-        int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
-        if (result > alpha) alpha = result;
+        // Recursive call, pvs, and update alpha
+        int result = -alphabeta(white, black, depth - 1, -alpha - 1, -alpha);
+        if (result > alpha) {
+            // Failed high
+            if (result >= beta) return beta; // Avoid calling alphabeta with alpha >= beta
+            alpha = -alphabeta(white, black, depth - 1, -beta, -alpha);
+        }
     }
 
     return alpha;
@@ -77,7 +82,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Iterative deepening
     if (depth > 1) {
-        move = alphabetaMove(black, white, depth - 1, alpha, beta) & 0xFF;
+        move = EXTRACT_MOVE(alphabetaMove(black, white, depth - 1, alpha, beta));
 
         // Try first move
         lm ^= BIT(move);
@@ -88,7 +93,15 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
         int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
         if (result > alpha) alpha = result;
     }
-
+    else {
+        move = CLZ(lm);
+        lm ^= BIT(move);
+        black = doMove(originalBlack, originalWhite, index);
+        white = originalWhite & ~black;
+        int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
+        alpha = (alpha > result) ? alpha : result;
+    }
+    
     // Main alphabeta algorithm
     while (lm && (alpha < beta)) {
         // Extract next legal move and make the move
@@ -97,10 +110,17 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
         black = doMove(originalBlack, originalWhite, index);
         white = originalWhite & ~black;
 
-        // Recursive call and update alpha
-        int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
+        // Recursive call, pvs, and update alpha
+        int result = -alphabeta(white, black, depth - 1, -alpha - 1, -alpha);
         if (result > alpha) {
-            alpha = result;
+            // Failed high
+            if (result >= beta) {
+                alpha = beta; // This will break the loop before the next iteration
+            }
+            else {
+                alpha = -alphabeta(white, black, depth - 1, -beta, MAX_EVAL);
+            }
+            //printf("changing move to %d depth %d\n", index, depth);
             move = index;
         }
     }
