@@ -1,12 +1,118 @@
 #include "search.h"
 #include <check.h>
 
+int pv(u64 black, u64 white, int depth, u8 *moves);
+void doMoves(u64 *black, u64 *white, u8 *moves, int numMoves);
+
+// Eval timing: 250 ns
+// doMove time: 12.1-12.3 ns
+// findLegalMove time: initial 14.1-14.3 ns, middle 15.4-15.6, end 11.7-11.9
+
+// Print board and eval
+#define PBE(side_to_move, other_side) printBoard(black, white); printEval(side_to_move, other_side);
+
+START_TEST(live_othello_12)
+{
+    // White to move, -23
+    u64 black = A7 | B7 | B6 | B5 | C7 | C6 | C5 | C4 | C3 | D2 | D3 | D4 | D5 | E2 | E3 | E4 
+              | E5 | F3 | F5 | F6 | G5 | G7 | H5;
+    u64 white = A2 | A3 | A4 | A5 | B1 | B3 | B4 | B8 | C1 | C2 | C8 | D1 | D6 | D7 | D8 | E6
+              | F7 | G8;
+    ck_assert_int_gt(eval(white, black), 0);
+}
+END_TEST
+
+START_TEST(live_othello_11)
+{
+    #if 0 // Keeping for possibly later
+    // Black to move, white advantage, -8
+    u64 black = D8 | E4 | E7 | F3 | F6 | F7 | G5 | G6 | H2 | H3 | H4 | H5;
+    u64 white = C5 | D2 | E3 | D4 | D5 | D6 | E5 | E6 | F4 | F5 | G3 | G4;
+    PBE(black, white);
+    // Following principal variation
+    u8 moves[60];
+    pv(black, white, 10, moves);
+    doMoves(&black, &white, moves, 8);
+    PBE(black, white);
+    #endif
+}
+END_TEST
+
+START_TEST(live_othello_10)
+{
+    // Very close game (theoretical result +2 black)
+    // black to move
+    u64 black = C1 | C2 | B8 | C8 | D8 | D1 | D2 | D3 | E1 | E2 | E3 | E4 | F1 | F2 | F3 | F5
+              | G1 | G3 | G4 | G6 | H2 | H3 | H4 | H5 | H6;
+    u64 white = A1 | B2 | C3 | D4 | F4 | C5 | D5 | E5 | G5 | D6 | E6 | F6 | D7 | E7 | F7 | F8;
+    int e = eval(black, white);
+    ck_assert_int_gt(e, -100);
+}
+END_TEST
+
+START_TEST(findMargin_edge)
+{
+    u64 desiredResult = A2 | A5;
+    ck_assert(findMargin(A3 | A4) == desiredResult);
+}
+END_TEST
+
+START_TEST(findMargin_starting_position_black)
+{
+    u64 desiredResult = C4 | C5 | C6 | D3 | D4 | D6 | E3 | E5 | E6 | F3 | F4 | F5;
+    ck_assert(findMargin(STARTING_BOARD_BLACK) == desiredResult);
+}
+END_TEST
+
+START_TEST(live_othello_9)
+{
+    // White is better, white to move
+    u64 black = A2 | A3 | A4 | B3 | B5 | C2 | C4 | C6 | D5 | E4 | E5 | F4 | F5;
+    u64 white = B4 | C3 | C5 | D3 | D4 | D6 | D7 | E3 | E6 | F6;
+    ck_assert_int_gt(eval(white, black), 0);
+    white = doMove(white, black, CLZ(A6));
+    black &= ~white;
+    ck_assert_int_lt(eval(black, white), 0);
+}
+END_TEST
+
+START_TEST(findRegions_test)
+{
+    u64 black = B3 | B4 | B5 | B8 | C4 | C6 | C7 | C8 | D4 | D5 | D6 | D7 | D8
+              | E4 | E5 | E7 | E8 | F4 | F5 | G4 | G5;
+    u64 white = A2 | A3 | A4 | A5 | A6 | A7 | B6 | C3 | C5 | D3 | E3 | F3 | H4 | H5 | H6|E6;
+    u64 regions[15];
+    ck_assert_uint_eq(findRegions(~(black | white), regions), 3);
+}
+END_TEST
+
+START_TEST(live_othello_8)
+{
+    // Black to move, white advantage, -13
+    u64 black = B3 | B4 | B5 | B8 | C4 | C6 | C7 | C8 | D4 | D5 | D6 | D7 | D8
+              | E4 | E5 | E6 | E7 | E8 | F4 | F5 | G4 | G5;
+    u64 white = A2 | A3 | A4 | A5 | A6 | A7 | B6 | C3 | C5 | D3 | E3 | F3 | H4 | H5 | H6;
+    ck_assert_int_lt(eval(black, white), 0);
+}
+END_TEST
+
+START_TEST(eval_timing_x6)
+{
+    u64 black = B3 | B4 | B5 | B8 | C4 | C6 | C7 | C8 | D4 | D5 | D6 | D7 | D8
+              | E4 | E5 | E6 | E7 | E8 | F4 | F5 | G4 | G5;
+    u64 white = A2 | A3 | A4 | A5 | A6 | A7 | B6 | C3 | C5 | D3 | E3 | F3 | H4 | H5 | H6;
+    int result;
+    for (int i = 0; i < 1000000; i++) result = eval(black, white);
+    ck_assert_int_gt(result, MIN_EVAL); // Dummy test
+}
+END_TEST
+
 START_TEST(live_othello_7)
 {
     u64 black = A4 | A5 | A6 | B5 | B6 | C2 | C3 | C4 | C5 | C6 | D3 | D4 | D7 | D8
               | E3 | E4 | E5 | E7 | E8 | F3 | F4 | F5 | F6 | F7 | F8;
     u64 white = B4 | D5 | D6 | E6;
-    ck_assert_int_ne(EXTRACT_MOVE(alphabetaMove(white, black, 10, -MAX_EVAL, MAX_EVAL)), 62);
+    ck_assert_int_ne(EXTRACT_MOVE(alphabetaMove(white, black, 4, -MAX_EVAL, MAX_EVAL)), 62);
 }
 END_TEST
 
@@ -37,7 +143,7 @@ START_TEST(live_othello_5)
               | D4 | D6 | D7 | D8 | E3 | E4 | E5 | E7 | E8 | F3 | F4 | F6 | F7 | F8 | G4 | H4;
     u64 white = B3 | C1 | C2 | C3 | C4 | D5 | E6 | F5;
     ck_assert_int_lt(eval(white, black), 0);
-    ck_assert_int_lt(alphabeta(white, black, 4, -1, 0), 0);
+    // ck_assert_int_lt(alphabeta(white, black, 4, -1, 0), 0);
 }
 END_TEST
 
@@ -68,7 +174,7 @@ START_TEST(live_othello_2)
     u64 black = D5 | E4 | E5 | E6 | G4 | G5 | G6;
     u64 white = C3 | C4 | C5 | D2 | D3 | D4 | E3 | F2 | F3 | F4 | F5 | F6 | F7;
     ck_assert_int_gt(eval(black, white), 0);
-    ck_assert_int_gt(alphabeta(black, white, 4, -1, 1), 0);
+    //ck_assert_int_gt(alphabeta(black, white, 4, -1, 1), 0);
 }
 END_TEST
 
@@ -174,8 +280,8 @@ START_TEST(frontierScore_early_position)
 {
     u64 black = D3 | C4 | E4 | F4 | C5 | E6;
     u64 white = D4 | D5 | E5 | F5 | D6;
-    ck_assert(frontierScore(black, white) == 24 / 42.0 + 6 / 64.0);
-    ck_assert(frontierScore(white, black) == 12 / 35.0 + 5 / 64.0);
+    ck_assert(frontierScore(black, white) == 24 / 30.0 + 6 / 10.0);
+    ck_assert(frontierScore(white, black) == 12 / 25.0 + 5 / 10.0);
 }
 END_TEST
 
@@ -312,6 +418,31 @@ START_TEST(endgameAlphabeta_totalCount_63x7)
 }
 END_TEST
 
+int pv(u64 black, u64 white, int depth, u8 *moves) {
+    if (depth != 0) {
+        *moves = alphabetaMove(black, white, depth, MIN_EVAL, MAX_EVAL);
+        black = doMove(black, white, *moves);
+        white &= ~black;
+        return 1 + pv(white, black, depth - 1, moves + 1);
+    }
+    return 0;
+}
+
+void doMoves(u64 *black, u64 *white, u8 *moves, int numMoves) {
+    for (int i = 0; i < numMoves; i++) {
+        if (i % 2 == 0) {
+            // Black to move
+            *black = doMove(*black, *white, moves[i]);
+            *white &= ~*black;
+        }
+        else {
+            // White to move
+            *white = doMove(*white, *black, moves[i]);
+            *black &= ~*white;
+        }
+    }
+}
+
 Suite * money_suite(void)
 {
     Suite *s;
@@ -324,34 +455,44 @@ Suite * money_suite(void)
     tcase_set_timeout(tc_core, 40);
 
     // Add tests here by name
-    tcase_add_test(tc_core, live_othello_1);
-    tcase_add_test(tc_core, live_othello_2);
-    tcase_add_test(tc_core, live_othello_3);
-    tcase_add_test(tc_core, live_othello_4);
-    tcase_add_test(tc_core, live_othello_5);
-    tcase_add_test(tc_core, live_othello_6);
-    tcase_add_test(tc_core, live_othello_7);
-    tcase_add_test(tc_core, alphabeta_no_lm);
-    tcase_add_test(tc_core, legal_moves_initial_position);
-    tcase_add_test(tc_core, legal_moves_totalCount_62);
-    tcase_add_test(tc_core, doMove_initial_position);
-    tcase_add_test(tc_core, doMove_no_legal_moves);
-    tcase_add_test(tc_core, frontierScore_early_position);
-    tcase_add_test(tc_core, betterPlayer_1);
-    tcase_add_test(tc_core, betterPlayer_2);
-    tcase_add_test(tc_core, betterPlayer_3);
-    tcase_add_test(tc_core, alphabeta_2nd_move);
-    tcase_add_test(tc_core, bad_opening_position_1);
-    tcase_add_test(tc_core, bad_midgame_position_low_mobility);
-    tcase_add_test(tc_core, bad_midgame_position_1);
-    tcase_add_test(tc_core, endgameAlphabeta_totalCount_63);
-    tcase_add_test(tc_core, endgameAlphabetaMove_totalCount_63);
-    tcase_add_test(tc_core, endgameAlphabetaMove_totalCount_63_no_legal_moves);
-    tcase_add_test(tc_core, endgameAlphabeta_totalCount_62);
-    tcase_add_test(tc_core, ffo_endgame_40);
-    //tcase_add_test(tc_core, ffo_endgame_41);
-    tcase_add_test(tc_core, endgameAlphabeta_totalCount_62x7);
-    tcase_add_test(tc_core, endgameAlphabeta_totalCount_63x7);
+    #define ADD_TEST(test_name) tcase_add_test(tc_core, test_name);
+    ADD_TEST(live_othello_1);
+    ADD_TEST(live_othello_2);
+    ADD_TEST(live_othello_3);
+    ADD_TEST(live_othello_4);
+    ADD_TEST(live_othello_5);
+    ADD_TEST(live_othello_6);
+    ADD_TEST(live_othello_7);
+    ADD_TEST(live_othello_8);
+    ADD_TEST(live_othello_9);
+    ADD_TEST(live_othello_10);
+    ADD_TEST(live_othello_11);
+    ADD_TEST(live_othello_12);
+    ADD_TEST(findMargin_starting_position_black);
+    ADD_TEST(findMargin_edge);
+    ADD_TEST(findRegions_test);
+    ADD_TEST(alphabeta_no_lm);
+    ADD_TEST(legal_moves_initial_position);
+    ADD_TEST(legal_moves_totalCount_62);
+    ADD_TEST(doMove_initial_position);
+    ADD_TEST(doMove_no_legal_moves);
+    ADD_TEST(frontierScore_early_position);
+    ADD_TEST(betterPlayer_1);
+    ADD_TEST(betterPlayer_2);
+    ADD_TEST(betterPlayer_3);
+    ADD_TEST(alphabeta_2nd_move);
+    ADD_TEST(bad_opening_position_1);
+    ADD_TEST(bad_midgame_position_low_mobility);
+    ADD_TEST(bad_midgame_position_1);
+    ADD_TEST(endgameAlphabeta_totalCount_63);
+    ADD_TEST(endgameAlphabetaMove_totalCount_63);
+    ADD_TEST(endgameAlphabetaMove_totalCount_63_no_legal_moves);
+    ADD_TEST(endgameAlphabeta_totalCount_62);
+    ADD_TEST(ffo_endgame_40);
+    ADD_TEST(ffo_endgame_41);
+    ADD_TEST(endgameAlphabeta_totalCount_62x7);
+    ADD_TEST(endgameAlphabeta_totalCount_63x7);
+    ADD_TEST(eval_timing_x6);
 
     suite_add_tcase(s, tc_core);
 

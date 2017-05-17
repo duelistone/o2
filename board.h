@@ -10,15 +10,19 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "defs.h"
-#include "stdlib.h"
 
+double int_pow(double base, int exponent);
 u64 findLegalMoves(u64 black, u64 white);
 u64 doMove(u64 black, u64 white, u8 move);
 u64 frontier(u64 black, u64 white);
 double frontierScore(u64 black, u64 white);
+u8 findRegions(u64 empty, u64 *regions);
+u64 findMargin(u64 region);
 int eval(u64 black, u64 white);
 void printEval(u64 black, u64 white);
+void printEval2(u64 black, u64 white);
 void printBoard(u64 black, u64 white);
 void printBoard2(u64 black, u64 white);
 

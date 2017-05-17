@@ -168,6 +168,9 @@
 // Corners
 #define CORNERS 0x8100000000000081ull
 
+// X-Squares
+#define X_SQUARES (B2 | G2 | B7 | G7)
+
 // Maximum eval constant
 #define MAX_EVAL 2048
 #define MIN_EVAL -MAX_EVAL
@@ -183,5 +186,8 @@
 // The number of discs after which the endgame is considered to start
 // endgameAlphabeta should not be called at an earlier depth.
 #define ENDGAME_START 41
+
+// Special constant for experimental mobility score formula
+#define TENTH_POWER_OF_FOUR 1.148698
 
 #endif

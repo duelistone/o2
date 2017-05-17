@@ -96,7 +96,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
     else {
         move = CLZ(lm);
         lm ^= BIT(move);
-        black = doMove(originalBlack, originalWhite, index);
+        black = doMove(originalBlack, originalWhite, move);
         white = originalWhite & ~black;
         int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
         alpha = (alpha > result) ? alpha : result;
