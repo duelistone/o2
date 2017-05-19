@@ -158,6 +158,9 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         originalBlack = originalWhite;
         originalWhite = temp;
         factor = -1;
+        int tempInt = beta;
+        beta = -alpha;
+        alpha = -tempInt;
     }
 
     // The legal moves will be ordered so that moves giving the opponent
@@ -245,6 +248,9 @@ int endgameAlphabeta62(u64 black, u64 white, int alpha, int beta) {
         black = white;
         white = temp;
         factor = -1;
+        int tempInt = beta;
+        beta = -alpha;
+        alpha = -tempInt;
     }
 
     // Make move
@@ -255,7 +261,7 @@ int endgameAlphabeta62(u64 black, u64 white, int alpha, int beta) {
     int best = -endgameAlphabeta63(white1, black1);
     if (best >= beta) return factor * beta;
     
-    if (lm != 0) {
+    if (lm) {
         // Try other move
         square63 = CLZ(lm);
         u64 black2 = doMove(black, white, square63);
