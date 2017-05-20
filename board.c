@@ -636,19 +636,21 @@ u64 frontier(u64 black, u64 white) {
     return frontierBlack;
 }
 
-double frontierScore(u64 black, u64 white) {
-    u64 empty = ~(black | white);
-    int result = PC(SHIFT_RIGHT(empty) & (RIGHT_FILTER & LEFT_FILTER) & black);
-    result += PC(SHIFT_LEFT(empty) & (LEFT_FILTER & RIGHT_FILTER) & black);
-    result += PC(SHIFT_UP(empty) & (UP_FILTER & DOWN_FILTER) & black);
-    result += PC(SHIFT_DOWN(empty) & (DOWN_FILTER & UP_FILTER) & black);
-    result += PC(SHIFT_UP_RIGHT(empty) & ~EDGES & black);
-    result += PC(SHIFT_UP_LEFT(empty) & ~EDGES & black);
-    result += PC(SHIFT_DOWN_RIGHT(empty) & ~EDGES & black);
-    result += PC(SHIFT_DOWN_LEFT(empty) & ~EDGES & black);
+double frontierScore(u64 black, u64 white, u64 poison) {
+    u64 taken = black | white;
+    u64 empty = ~taken;
+    // Calculate weighted frontier
+    int result = PC(SHIFT_RIGHT(empty & ~poison) & (RIGHT_FILTER & LEFT_FILTER) & black);
+    result += PC(SHIFT_LEFT(empty & ~poison) & (LEFT_FILTER & RIGHT_FILTER) & black);
+    result += PC(SHIFT_UP(empty & ~poison) & (UP_FILTER & DOWN_FILTER) & black);
+    result += PC(SHIFT_DOWN(empty & ~poison) & (DOWN_FILTER & UP_FILTER) & black);
+    result += PC(SHIFT_UP_RIGHT(empty & ~poison) & ~EDGES & black);
+    result += PC(SHIFT_UP_LEFT(empty & ~poison) & ~EDGES & black);
+    result += PC(SHIFT_DOWN_RIGHT(empty & ~poison) & ~EDGES & black);
+    result += PC(SHIFT_DOWN_LEFT(empty & ~poison) & ~EDGES & black);
     u64 fro = frontier(black, white);
     u64 internal = black & ~fro;
-    return (result - 1.5 * PC(internal & ~EDGES) - 0.75 * PC(internal & EDGES)) / (5.0 * PC(black)) + PC(fro) / 10.0;
+    return (result - 4 * PC(internal & ~EDGES) - 2 * PC(internal & EDGES)) / (3 * PC(taken)) + PC(fro) / 8.0;
 }
 
 // Fills up an array with regions of board
@@ -708,14 +710,6 @@ u64 findMargin(u64 region) {
 int eval(u64 black, u64 white) {
     u64 taken = black | white;
     u64 empty = ~taken;
-    // Frontier
-    // Idea: double frontier (2 away and unshielded)?
-    // Old idea: simple frontier ratio
-    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
-    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
-    // New idea: Weighted frontiers
-    double eeF = frontierScore(white, black) - frontierScore(black, white);
-
     // Corners
     double eeC = (PC(black & CORNERS) - PC(white & CORNERS));
     // Score for corner patterns
@@ -728,6 +722,7 @@ int eval(u64 black, u64 white) {
     eeC += SCP(A8 | A7);
     eeC += SCP(H8 | G8);
     eeC += SCP(H8 | H7);
+    eeC *= 2; // So eeC so far is worth twice as much; we'll divide by 2 later
     eeC += SCP(A1 | B1 | C1);
     eeC += SCP(A1 | A2 | A3);
     eeC += SCP(H1 | G1 | F1);
@@ -736,14 +731,27 @@ int eval(u64 black, u64 white) {
     eeC += SCP(A8 | A7 | A6);
     eeC += SCP(H8 | G8 | F8);
     eeC += SCP(H8 | H7 | H6);
+    eeC += SCP(A1 | B1 | C1 | D1);
+    eeC += SCP(A1 | A2 | A3 | A4);
+    eeC += SCP(H1 | G1 | F1 | E1);
+    eeC += SCP(H1 | H2 | H3 | H4);
+    eeC += SCP(A8 | B8 | C8 | D8);
+    eeC += SCP(A8 | A7 | A6 | A5);
+    eeC += SCP(H8 | G8 | F8 | E8);
+    eeC += SCP(H8 | H7 | H6 | H5);
+    eeC /= 2;
 
     // Poison squares (squares that give up corner, or risky x-squares)
     // This computation is finished in the C-squares section
     u64 poisonBlack = 0;
     u64 poisonWhite = 0;
+    u64 xPoisonBlack = 0;
+    u64 xPoisonWhite = 0;
     // X-square check
     #define XSQC(a, b) \
-    if ((taken & ((a) | (b))) == 0) {poisonBlack |= (b); poisonWhite |= (b);}
+    if ((taken & ((a) | (b))) == 0) {xPoisonBlack |= (b); xPoisonWhite |= (b);}\
+    else if ((black & ((a) | (b))) == (b)) {eeC--;}\
+    else if ((white & ((a) | (b))) == (b)) {eeC++;}
     XSQC(A1, B2);
     XSQC(H1, G2);
     XSQC(A8, B7);
@@ -773,7 +781,7 @@ int eval(u64 black, u64 white) {
         c_region |= shifter(c_region) & black;\
         c_region |= shifter(c_region) & black;\
         c_region |= shifter(c_region) & black;\
-        eeC -= 1.25 - PC(c_region) / 4.0;\
+        eeC -= 0.8 - PC(c_region) * 0.1;\
         c_region = shifter(c_region) & empty;\
         if (c_region && (shifter(c_region) & white)) poisonBlack |= c_region;\
     }\
@@ -783,7 +791,7 @@ int eval(u64 black, u64 white) {
         c_region |= shifter(c_region) & white;\
         c_region |= shifter(c_region) & white;\
         c_region |= shifter(c_region) & white;\
-        eeC += 1.25 - PC(c_region) / 4.0;\
+        eeC += 0.8 - PC(c_region) * 0.1;\
         c_region = shifter(c_region) & empty;\
         if (c_region && (shifter(c_region) & black)) poisonWhite |= c_region;\
     }
@@ -797,8 +805,16 @@ int eval(u64 black, u64 white) {
     CSQS(H8, H7, SHIFT_UP);
 
     // Scale down corner and c-square scores
-    eeC /= (1 + PC(EDGES & taken)) / 2.4;
+    eeC /= (1 + PC(EDGES & ~CORNERS & taken)) / 2.4;
     
+    // Frontier
+    // Idea: double frontier (2 away and unshielded)?
+    // Old idea: simple frontier ratio
+    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
+    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
+    // New idea: Weighted frontiers
+    double eeF = frontierScore(white, black, poisonBlack | xPoisonBlack) - frontierScore(black, white, poisonWhite | xPoisonWhite);
+
     // Mobility
     u64 lmBlack = findLegalMoves(black, white);
     u64 lmWhite = findLegalMoves(white, black);
@@ -821,21 +837,23 @@ int eval(u64 black, u64 white) {
         // Poison legal moves are treated as negative legal moves
         // Perhaps X-squares should only be subtracted once, since a sacrifice of a 
         // corner along an X-square is more common than a sacrifice along an edge.
-        int lmNumBlack = PC(lmBlack & region);
-        int lmNumWhite = PC(lmWhite & region);
+        double lmNumBlack = PC(lmBlack & region);
+        double lmNumWhite = PC(lmWhite & region);
         int total = lmNumBlack + lmNumWhite; // Total should not be affected by poison squares
         if (total == 0) continue;
-        lmNumBlack -= 2 * PC(lmBlack & region & poisonBlack);
-        lmNumWhite -= 2 * PC(lmWhite & region & poisonWhite);
+        lmNumBlack -= 1.5 * PC(lmBlack & region & poisonBlack);
+        lmNumWhite -= 1.5 * PC(lmWhite & region & poisonWhite);
+        lmNumBlack -= 0.75 * PC(lmBlack & region & xPoisonBlack);
+        lmNumWhite -= 0.75 * PC(lmWhite & region & xPoisonWhite);
 
         // Calculations (no explanations for these yet, but we use an exponential)
-        int diff = lmNumBlack - lmNumWhite;
-        int absDiff = (diff > 0) ? diff : -diff;
+        double diff = lmNumBlack - lmNumWhite;
+        double absDiff = (diff > 0) ? diff : -diff;
         double exponent = int_pow(TENTH_POWER_OF_FOUR, 35 - total);
         double score = 1 - int_pow(1 - 0.01 * absDiff, exponent); 
         score = (diff > 0) ? score : -score;
         if (PC(region & CORNERS) == 1) score *= 1.5;
-        int factor = 2.1 - 0.1 * PC(region);
+        double factor = 2.1 - 0.1 * PC(region);
         factor = (factor > 1) ? factor : 1;
         score *= factor;
         eeRM += score;
@@ -843,29 +861,24 @@ int eval(u64 black, u64 white) {
     eeRM /= numRegions;
 
     // Putting it all together
-    double cornerWeight = 0.55;
+    double cornerWeight = 0.51;
     double remainingWeight = 1 - cornerWeight;
-    double frontierWeight = 0.3 * remainingWeight;
-    double mobilityWeight = 0.4 * remainingWeight;
-    double rmWeight = 0.3 * remainingWeight;
-    return 1024 * (eeF * frontierWeight + eeC * cornerWeight + eeM * mobilityWeight + eeRM * rmWeight);
+    double frontierWeight = 0.35 * remainingWeight;
+    double mobilityWeight = 0.5 * remainingWeight;
+    double rmWeight = 0.15 * remainingWeight;
+    double ee = 1024 * (eeF * frontierWeight + eeC * cornerWeight + eeM * mobilityWeight + eeRM * rmWeight);
+    double eeSumAbs = 1024 * (fabs(eeF) * frontierWeight + fabs(eeC) * cornerWeight + fabs(eeM) * mobilityWeight + fabs(eeRM) * rmWeight);
+    return ee / (1 + eeSumAbs / 400);
 }
 
 // Print eval information for debugging
 void printEval(u64 black, u64 white) {
     u64 taken = black | white;
     u64 empty = ~taken;
-    // Frontier
-    // Idea: double frontier (2 away and unshielded)?
-    // Old idea: simple frontier ratio
-    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
-    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
-    // New idea: Weighted frontiers
-    double eeF = frontierScore(white, black) - frontierScore(black, white);
-
     // Corners
     double eeC = (PC(black & CORNERS) - PC(white & CORNERS));
     // Score for corner patterns
+    #define SCP(x) ((black & (x)) == (x)) - ((white & (x)) == (x));
     eeC += SCP(A1 | B1);
     eeC += SCP(A1 | A2);
     eeC += SCP(H1 | G1);
@@ -874,6 +887,7 @@ void printEval(u64 black, u64 white) {
     eeC += SCP(A8 | A7);
     eeC += SCP(H8 | G8);
     eeC += SCP(H8 | H7);
+    eeC *= 2; // So eeC so far is worth twice as much; we'll divide by 2 later
     eeC += SCP(A1 | B1 | C1);
     eeC += SCP(A1 | A2 | A3);
     eeC += SCP(H1 | G1 | F1);
@@ -882,17 +896,37 @@ void printEval(u64 black, u64 white) {
     eeC += SCP(A8 | A7 | A6);
     eeC += SCP(H8 | G8 | F8);
     eeC += SCP(H8 | H7 | H6);
+    eeC += SCP(A1 | B1 | C1 | D1);
+    eeC += SCP(A1 | A2 | A3 | A4);
+    eeC += SCP(H1 | G1 | F1 | E1);
+    eeC += SCP(H1 | H2 | H3 | H4);
+    eeC += SCP(A8 | B8 | C8 | D8);
+    eeC += SCP(A8 | A7 | A6 | A5);
+    eeC += SCP(H8 | G8 | F8 | E8);
+    eeC += SCP(H8 | H7 | H6 | H5);
+    eeC /= 2;
 
     // Poison squares (squares that give up corner, or risky x-squares)
     // This computation is finished in the C-squares section
     u64 poisonBlack = 0;
     u64 poisonWhite = 0;
+    u64 xPoisonBlack = 0;
+    u64 xPoisonWhite = 0;
     // X-square check
+    #define XSQC(a, b) \
+    if ((taken & ((a) | (b))) == 0) {xPoisonBlack |= (b); xPoisonWhite |= (b);}\
+    else if ((black & ((a) | (b))) == (b)) {eeC--;}\
+    else if ((white & ((a) | (b))) == (b)) {eeC++;}
     XSQC(A1, B2);
     XSQC(H1, G2);
     XSQC(A8, B7);
     XSQC(H8, G7);
     // Empty c-square check
+    #define EMPTY_CSQ(a, b, c) \
+    if ((taken & ((a) | (b))) == 0) {\
+        if (white & (c)) poisonBlack |= (b);\
+        else if (black & (c)) poisonWhite |= (b);\
+    }
     EMPTY_CSQ(A1, B1, C1);
     EMPTY_CSQ(A1, A2, A3);
     EMPTY_CSQ(H1, H2, H3);
@@ -905,6 +939,27 @@ void printEval(u64 black, u64 white) {
     // C squares
     // More isolated c-squares are worse
     // Macro for modifying c-square score based on corner a and adjacent c-square b
+    #define CSQS(a, b, shifter) \
+    if ((black & ((a) | (b))) == (b)) {\
+        u64 c_region = b;\
+        c_region |= shifter(c_region) & black;\
+        c_region |= shifter(c_region) & black;\
+        c_region |= shifter(c_region) & black;\
+        c_region |= shifter(c_region) & black;\
+        eeC -= 0.8 - PC(c_region) * 0.1;\
+        c_region = shifter(c_region) & empty;\
+        if (c_region && (shifter(c_region) & white)) poisonBlack |= c_region;\
+    }\
+    else if ((white & ((a) | (b))) == (b)) {\
+        u64 c_region = (b);\
+        c_region |= shifter(c_region) & white;\
+        c_region |= shifter(c_region) & white;\
+        c_region |= shifter(c_region) & white;\
+        c_region |= shifter(c_region) & white;\
+        eeC += 0.8 - PC(c_region) * 0.1;\
+        c_region = shifter(c_region) & empty;\
+        if (c_region && (shifter(c_region) & black)) poisonWhite |= c_region;\
+    }
     CSQS(A1, B1, SHIFT_RIGHT);
     CSQS(A1, A2, SHIFT_DOWN);
     CSQS(H1, G1, SHIFT_LEFT);
@@ -915,8 +970,16 @@ void printEval(u64 black, u64 white) {
     CSQS(H8, H7, SHIFT_UP);
 
     // Scale down corner and c-square scores
-    eeC /= (1 + PC(EDGES & taken)) / 2.4;
+    eeC /= (1 + PC(EDGES & ~CORNERS & taken)) / 2.4;
     
+    // Frontier
+    // Idea: double frontier (2 away and unshielded)?
+    // Old idea: simple frontier ratio
+    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
+    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
+    // New idea: Weighted frontiers
+    double eeF = frontierScore(white, black, poisonBlack | xPoisonBlack) - frontierScore(black, white, poisonWhite | xPoisonWhite);
+
     // Mobility
     u64 lmBlack = findLegalMoves(black, white);
     u64 lmWhite = findLegalMoves(white, black);
@@ -939,21 +1002,23 @@ void printEval(u64 black, u64 white) {
         // Poison legal moves are treated as negative legal moves
         // Perhaps X-squares should only be subtracted once, since a sacrifice of a 
         // corner along an X-square is more common than a sacrifice along an edge.
-        int lmNumBlack = PC(lmBlack & region);
-        int lmNumWhite = PC(lmWhite & region);
+        double lmNumBlack = PC(lmBlack & region);
+        double lmNumWhite = PC(lmWhite & region);
         int total = lmNumBlack + lmNumWhite; // Total should not be affected by poison squares
         if (total == 0) continue;
-        lmNumBlack -= 2 * PC(lmBlack & region & poisonBlack);
-        lmNumWhite -= 2 * PC(lmWhite & region & poisonWhite);
+        lmNumBlack -= 1.5 * PC(lmBlack & region & poisonBlack);
+        lmNumWhite -= 1.5 * PC(lmWhite & region & poisonWhite);
+        lmNumBlack -= 0.75 * PC(lmBlack & region & xPoisonBlack);
+        lmNumWhite -= 0.75 * PC(lmWhite & region & xPoisonWhite);
 
         // Calculations (no explanations for these yet, but we use an exponential)
-        int diff = lmNumBlack - lmNumWhite;
-        int absDiff = (diff > 0) ? diff : -diff;
+        double diff = lmNumBlack - lmNumWhite;
+        double absDiff = (diff > 0) ? diff : -diff;
         double exponent = int_pow(TENTH_POWER_OF_FOUR, 35 - total);
         double score = 1 - int_pow(1 - 0.01 * absDiff, exponent); 
         score = (diff > 0) ? score : -score;
         if (PC(region & CORNERS) == 1) score *= 1.5;
-        int factor = 2.1 - 0.1 * PC(region);
+        double factor = 2.1 - 0.1 * PC(region);
         factor = (factor > 1) ? factor : 1;
         score *= factor;
         eeRM += score;
@@ -961,32 +1026,27 @@ void printEval(u64 black, u64 white) {
     eeRM /= numRegions;
 
     // Putting it all together
-    double cornerWeight = 0.55;
+    double cornerWeight = 0.51;
     double remainingWeight = 1 - cornerWeight;
-    double frontierWeight = 0.3 * remainingWeight;
-    double mobilityWeight = 0.4 * remainingWeight;
-    double rmWeight = 0.3 * remainingWeight;
+    double frontierWeight = 0.35 * remainingWeight;
+    double mobilityWeight = 0.5 * remainingWeight;
+    double rmWeight = 0.15 * remainingWeight;
+    double eeSumAbs = 1024 * (fabs(eeF) * frontierWeight + fabs(eeC) * cornerWeight + fabs(eeM) * mobilityWeight + fabs(eeRM) * rmWeight);
     printf("frontier: %f\n", frontierWeight * eeF);
     printf("mobility: %f\n", mobilityWeight * eeM);
     printf("corners: %f\n", cornerWeight * eeC);
     printf("regional mobility %f\n", rmWeight * eeRM);
+    printf("factor %f\n", 1 / (1 + eeSumAbs / 400));
     printf("Actual eval: %d\n", eval(black, white));
 }
 
 void printEval2(u64 black, u64 white) {
     u64 taken = black | white;
     u64 empty = ~taken;
-    // Frontier
-    // Idea: double frontier (2 away and unshielded)?
-    // Old idea: simple frontier ratio
-    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
-    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
-    // New idea: Weighted frontiers
-    double eeF = frontierScore(white, black) - frontierScore(black, white);
-
     // Corners
     double eeC = (PC(black & CORNERS) - PC(white & CORNERS));
     // Score for corner patterns
+    #define SCP(x) ((black & (x)) == (x)) - ((white & (x)) == (x));
     eeC += SCP(A1 | B1);
     eeC += SCP(A1 | A2);
     eeC += SCP(H1 | G1);
@@ -995,6 +1055,7 @@ void printEval2(u64 black, u64 white) {
     eeC += SCP(A8 | A7);
     eeC += SCP(H8 | G8);
     eeC += SCP(H8 | H7);
+    eeC *= 2; // So eeC so far is worth twice as much; we'll divide by 2 later
     eeC += SCP(A1 | B1 | C1);
     eeC += SCP(A1 | A2 | A3);
     eeC += SCP(H1 | G1 | F1);
@@ -1003,17 +1064,37 @@ void printEval2(u64 black, u64 white) {
     eeC += SCP(A8 | A7 | A6);
     eeC += SCP(H8 | G8 | F8);
     eeC += SCP(H8 | H7 | H6);
+    eeC += SCP(A1 | B1 | C1 | D1);
+    eeC += SCP(A1 | A2 | A3 | A4);
+    eeC += SCP(H1 | G1 | F1 | E1);
+    eeC += SCP(H1 | H2 | H3 | H4);
+    eeC += SCP(A8 | B8 | C8 | D8);
+    eeC += SCP(A8 | A7 | A6 | A5);
+    eeC += SCP(H8 | G8 | F8 | E8);
+    eeC += SCP(H8 | H7 | H6 | H5);
+    eeC /= 2;
 
     // Poison squares (squares that give up corner, or risky x-squares)
     // This computation is finished in the C-squares section
     u64 poisonBlack = 0;
     u64 poisonWhite = 0;
+    u64 xPoisonBlack = 0;
+    u64 xPoisonWhite = 0;
     // X-square check
+    #define XSQC(a, b) \
+    if ((taken & ((a) | (b))) == 0) {xPoisonBlack |= (b); xPoisonWhite |= (b);}\
+    else if ((black & ((a) | (b))) == (b)) {eeC--;}\
+    else if ((white & ((a) | (b))) == (b)) {eeC++;}
     XSQC(A1, B2);
     XSQC(H1, G2);
     XSQC(A8, B7);
     XSQC(H8, G7);
     // Empty c-square check
+    #define EMPTY_CSQ(a, b, c) \
+    if ((taken & ((a) | (b))) == 0) {\
+        if (white & (c)) poisonBlack |= (b);\
+        else if (black & (c)) poisonWhite |= (b);\
+    }
     EMPTY_CSQ(A1, B1, C1);
     EMPTY_CSQ(A1, A2, A3);
     EMPTY_CSQ(H1, H2, H3);
@@ -1026,6 +1107,27 @@ void printEval2(u64 black, u64 white) {
     // C squares
     // More isolated c-squares are worse
     // Macro for modifying c-square score based on corner a and adjacent c-square b
+    #define CSQS(a, b, shifter) \
+    if ((black & ((a) | (b))) == (b)) {\
+        u64 c_region = b;\
+        c_region |= shifter(c_region) & black;\
+        c_region |= shifter(c_region) & black;\
+        c_region |= shifter(c_region) & black;\
+        c_region |= shifter(c_region) & black;\
+        eeC -= 0.8 - PC(c_region) * 0.1;\
+        c_region = shifter(c_region) & empty;\
+        if (c_region && (shifter(c_region) & white)) poisonBlack |= c_region;\
+    }\
+    else if ((white & ((a) | (b))) == (b)) {\
+        u64 c_region = (b);\
+        c_region |= shifter(c_region) & white;\
+        c_region |= shifter(c_region) & white;\
+        c_region |= shifter(c_region) & white;\
+        c_region |= shifter(c_region) & white;\
+        eeC += 0.8 - PC(c_region) * 0.1;\
+        c_region = shifter(c_region) & empty;\
+        if (c_region && (shifter(c_region) & black)) poisonWhite |= c_region;\
+    }
     CSQS(A1, B1, SHIFT_RIGHT);
     CSQS(A1, A2, SHIFT_DOWN);
     CSQS(H1, G1, SHIFT_LEFT);
@@ -1036,8 +1138,16 @@ void printEval2(u64 black, u64 white) {
     CSQS(H8, H7, SHIFT_UP);
 
     // Scale down corner and c-square scores
-    eeC /= (1 + PC(EDGES & taken)) / 2.4;
+    eeC /= (1 + PC(EDGES & ~CORNERS & taken)) / 2.4;
     
+    // Frontier
+    // Idea: double frontier (2 away and unshielded)?
+    // Old idea: simple frontier ratio
+    //double blackFrontierRatio = PC(frontier(black, white)) / (double) PC(black);
+    //double whiteFrontierRatio = PC(frontier(white, black)) / (double) PC(white);
+    // New idea: Weighted frontiers
+    double eeF = frontierScore(white, black, poisonBlack | xPoisonBlack) - frontierScore(black, white, poisonWhite | xPoisonWhite);
+
     // Mobility
     u64 lmBlack = findLegalMoves(black, white);
     u64 lmWhite = findLegalMoves(white, black);
@@ -1060,21 +1170,23 @@ void printEval2(u64 black, u64 white) {
         // Poison legal moves are treated as negative legal moves
         // Perhaps X-squares should only be subtracted once, since a sacrifice of a 
         // corner along an X-square is more common than a sacrifice along an edge.
-        int lmNumBlack = PC(lmBlack & region);
-        int lmNumWhite = PC(lmWhite & region);
+        double lmNumBlack = PC(lmBlack & region);
+        double lmNumWhite = PC(lmWhite & region);
         int total = lmNumBlack + lmNumWhite; // Total should not be affected by poison squares
         if (total == 0) continue;
-        lmNumBlack -= 2 * PC(lmBlack & region & poisonBlack);
-        lmNumWhite -= 2 * PC(lmWhite & region & poisonWhite);
+        lmNumBlack -= 1.5 * PC(lmBlack & region & poisonBlack);
+        lmNumWhite -= 1.5 * PC(lmWhite & region & poisonWhite);
+        lmNumBlack -= 0.75 * PC(lmBlack & region & xPoisonBlack);
+        lmNumWhite -= 0.75 * PC(lmWhite & region & xPoisonWhite);
 
         // Calculations (no explanations for these yet, but we use an exponential)
-        int diff = lmNumBlack - lmNumWhite;
-        int absDiff = (diff > 0) ? diff : -diff;
+        double diff = lmNumBlack - lmNumWhite;
+        double absDiff = (diff > 0) ? diff : -diff;
         double exponent = int_pow(TENTH_POWER_OF_FOUR, 35 - total);
         double score = 1 - int_pow(1 - 0.01 * absDiff, exponent); 
         score = (diff > 0) ? score : -score;
         if (PC(region & CORNERS) == 1) score *= 1.5;
-        int factor = 2.1 - 0.1 * PC(region);
+        double factor = 2.1 - 0.1 * PC(region);
         factor = (factor > 1) ? factor : 1;
         score *= factor;
         eeRM += score;
@@ -1082,15 +1194,17 @@ void printEval2(u64 black, u64 white) {
     eeRM /= numRegions;
 
     // Putting it all together
-    double cornerWeight = 0.55;
+    double cornerWeight = 0.51;
     double remainingWeight = 1 - cornerWeight;
-    double frontierWeight = 0.3 * remainingWeight;
-    double mobilityWeight = 0.4 * remainingWeight;
-    double rmWeight = 0.3 * remainingWeight;
+    double frontierWeight = 0.35 * remainingWeight;
+    double mobilityWeight = 0.5 * remainingWeight;
+    double rmWeight = 0.15 * remainingWeight;
+    double eeSumAbs = 1024 * (fabs(eeF) * frontierWeight + fabs(eeC) * cornerWeight + fabs(eeM) * mobilityWeight + fabs(eeRM) * rmWeight);
     fprintf(stderr, "frontier: %f\n", frontierWeight * eeF);
     fprintf(stderr, "mobility: %f\n", mobilityWeight * eeM);
     fprintf(stderr, "corners: %f\n", cornerWeight * eeC);
     fprintf(stderr, "regional mobility %f\n", rmWeight * eeRM);
+    fprintf(stderr, "factor %f\n", 1 / (1 + eeSumAbs / 400));
     fprintf(stderr, "Actual eval: %d\n", eval(black, white));
 }
 

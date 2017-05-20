@@ -4,7 +4,7 @@ CFLAGS = -O3 -Wall -march=native
 all: test engine
 
 engine: main.o board.o search.o
-	$(CC) $(CFLAGS) -o engine main.o board.o search.o
+	$(CC) $(CFLAGS) -o engine main.o board.o search.o -lm
 
 test: test.o search.o board.o 
 	$(CC) $(CFLAGS) -o test test.o search.o board.o -lcheck -lm -lrt -lpthread -lsubunit
