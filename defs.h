@@ -190,4 +190,31 @@
 // Special constant for experimental mobility score formula
 #define TENTH_POWER_OF_FOUR 1.148698
 
+// Possible endgame evals as scored in transposition table
+#define DRAW 0
+#define BLACK_WIN 1
+#define WHITE_WIN 2
+#define NOT_BLACK_WIN 3  // For when alpha = 0, beta = 1, and the eval given is 0.
+#define NOT_WHITE_WIN 4  // For when alpha = -1, beta = 0, and the eval given is 0.
+
+// Extracting eval and number of nodes from endgame transposition table
+#define EXTRACT_ENDGAME_TT_EVAL(data) (data & 0x7ull)
+#define EXTRACT_ENDGAME_TT_NUM_NODES(data) (data >> 61)
+
+// Endgame transposition table size in bytes
+#define HASH_LEN 24 // In bits
+#define ENDGAME_TT_LEN (1u << HASH_LEN)
+#define ENDGAME_TT_SIZE (ENDGAME_TT_LEN * sizeof(ttEntry))
+
+// When to stop hashing
+#define STOP_HASHING_TC 59
+
+// When to stop using midgame evaluation function in endgame search
+#define STOP_USING_EVAL 52
+
+// Depth of midgame searches used in endgame
+#define ENDGAME_AB_DEPTH 1
+
+// Determine whether the number of transposition table collisions should be counted
+#define COUNT_COLLISIONS 0
 #endif

@@ -11,6 +11,24 @@ void doMoves(u64 *black, u64 *white, u8 *moves, int numMoves);
 // Print board and eval
 #define PBE(side_to_move, other_side) printBoard(black, white); printEval(side_to_move, other_side);
 
+START_TEST(initializeTT_x0)
+{
+    initializeTT();
+}
+END_TEST
+
+START_TEST(boardHash_x6)
+{
+    // Testing time for hash function
+    // Worst case (60 filled squares)
+    u64 black = 0xFFFFFFFFFFFFFFF0ull; 
+    u64 white = 0;
+    u32 h = 0;
+    for (int i = 0; i < 1000000; i++) h = boardHash(black, white) % ENDGAME_TT_LEN;
+    ck_assert(h);
+}
+END_TEST
+
 START_TEST(endgameAlphabetaMove_bug_1)
 {
     // u64 black = A1 | A2 | A3 | A4 | A5 | A6 | B2 | B3 | B6 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8
@@ -358,6 +376,7 @@ END_TEST
 
 START_TEST(endgameAlphabetaMove_totalCount_63)
 {
+    initializeTT();
     u64 black = -1ull & ~(BIT(63) | BIT(0));
     u64 white = BIT(63);
     int result = endgameAlphabetaMove(white, black, -1, 1);
@@ -368,6 +387,7 @@ END_TEST
 
 START_TEST(endgameAlphabetaMove_totalCount_63_no_legal_moves)
 {
+    initializeTT();
     u64 black = -1ull & ~(BIT(63) | BIT(0));
     u64 white = BIT(63);
     int result = endgameAlphabetaMove(black, white, -1, 1);
@@ -384,27 +404,135 @@ START_TEST(endgameAlphabeta_totalCount_62)
 }
 END_TEST
 
-// Best time: 0.0032 sec
+// Time should be mostly just initializeTT time
 START_TEST(ffo_endgame_40)
 {
+    initializeTT();
     u64 black = C3 | D3 | C4 | H1 | H2 | H3 | H4 | H5 | H6 | H7 | G4 | G5;
     u64 white = A1 | A3 | A4 | A5 | B2 | B3 | B4 | B5 | C2 | C5 | D1 | D2
               | D4 | D5 | D6 | E1 | E2 | E3 | E4 | E5 | E6 | E7 | F1 | F2
               | F3 | F4 | F5 | F6 | G1 | G2 | G3 | G6;
-    ck_assert_int_gt(endgameAlphabeta(black, white, -1, 1), 0);
+    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
 }
 END_TEST
 
-// Best time: 18.5 sec
+// Best time: 5.31 sec
 START_TEST(ffo_endgame_41)
 {
+    initializeTT();
     u64 black = A4 | B4 | B5 | C4 | C5 | C6 | D4 | D7 | E4 | E6 | E7 | F5
               | F6 | G2;
     u64 white = A6 | B1 | B3 | B8 | B6 | C1 | C2 | C3 | C8 | C7 | D1 | D2
               | D3 | D8 | D6 | D5 | E1 | E2 | E3 | E5 | F1 | F2 | F3 | F4
               | F7 | G3 | G4 | G8;
 
-    ck_assert_int_eq(endgameAlphabeta(black, white, -1, 1), 0);
+    ck_assert_int_eq(endgameAlphabeta(black, white, 0, 1), 0);
+
+    #if 0
+    #if COUNT_COLLISIONS
+    {
+        int numEmpty = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (endgameTT[i].black == 0) numEmpty++;
+        }
+        printf("empty %d\n", numEmpty);
+        printf("filled %d\n", 1024 * 1024 * 64 - numEmpty);
+        int num1 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 1) num1++;
+        }
+        printf("num1 %d\n", num1);
+        int num2 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 2) num2++;
+        }
+        printf("num2 %d\n", num2);
+        int num3 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 3) num3++;
+        }
+        printf("num3 %d\n", num3);
+        int num4 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 4) num4++;
+        }
+        printf("num4 %d\n", num4);
+        int num = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] > 3) num++;
+        }
+        printf("num %d\n", num);
+        printf("ttHits %lu\n", ttHits);
+    }
+    #endif
+    #endif
+    
+    ck_assert_int_eq(endgameAlphabeta(black, white, -1, 0), 0);
+
+    #if 0
+    #if COUNT_COLLISIONS
+    {
+        int numEmpty = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (endgameTT[i].black == 0) numEmpty++;
+        }
+        printf("empty %d\n", numEmpty);
+        printf("filled %d\n", 1024 * 1024 * 64 - numEmpty);
+        int num1 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 1) num1++;
+        }
+        printf("num1 %d\n", num1);
+        int num2 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 2) num2++;
+        }
+        printf("num2 %d\n", num2);
+        int num3 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 3) num3++;
+        }
+        printf("num3 %d\n", num3);
+        int num4 = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] == 4) num4++;
+        }
+        printf("num4 %d\n", num4);
+        int num = 0;
+        for (size_t i = 0; i < ENDGAME_TT_LEN; i++) {
+            if (collisions[i] > 3) num++;
+        }
+        printf("num %d\n", num);
+        printf("ttHits %lu\n", ttHits);
+    }
+    #endif
+    #endif
+}
+END_TEST
+
+// Best time: 1.65 sec
+START_TEST(ffo_endgame_42)
+{
+    initializeTT();
+    u64 black = A5 | E2 | F2 | F3 | F4 | F5 | F6 | G5 | G7;
+    u64 white = C1 | D1 | E1 | H2 | A3 | B3 | C3 | D3 | E3 | G3 | H3
+              | B4 | C4 | D4 | E4 | G4 | H4 | C5 | D5 | E5 | H5 | D6
+              | E6 | G6 | H6 | D7 | E7 | F7 | H7 | C8 | D8 | E8 | F8;
+
+    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
+}
+END_TEST
+
+// Best time: 6.22 sec
+START_TEST(ffo_endgame_45)
+{
+    initializeTT();
+    u64 black = D1 | E1 | F1 | G1 | A2 | C2 | D2 | E2 | A3 | B3 | D3
+              | A4 | B4 | C4 | E4 | A5 | B5 | D5 | E5 | C6 | D6 | E6;
+    u64 white = F2 | C3 | E3 | F3 | D4 | F4 | C5 | F5 | B6 | F6 | G6
+              | A7 | C7 | D7 | E7 | F7 | E8 | F8; 
+
+    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
 }
 END_TEST
 
@@ -472,6 +600,8 @@ Suite * money_suite(void)
 
     // Add tests here by name
     #define ADD_TEST(test_name) tcase_add_test(tc_core, test_name);
+    ADD_TEST(initializeTT_x0);
+    ADD_TEST(boardHash_x6);
     ADD_TEST(live_othello_1);
     ADD_TEST(live_othello_2);
     ADD_TEST(live_othello_3);
@@ -507,6 +637,8 @@ Suite * money_suite(void)
     ADD_TEST(endgameAlphabeta_totalCount_62);
     ADD_TEST(ffo_endgame_40);
     ADD_TEST(ffo_endgame_41);
+    ADD_TEST(ffo_endgame_42);
+    ADD_TEST(ffo_endgame_45);
     ADD_TEST(endgameAlphabeta_totalCount_62x7);
     ADD_TEST(endgameAlphabeta_totalCount_63x7);
     ADD_TEST(eval_timing_x6);

@@ -4,7 +4,9 @@
 #define __SEARCH_H__
 
 #include "board.h"
-#include "string.h"
+#include "tt.h"
+#include "hash.h"
+#include <string.h>
 #include <assert.h>
 
 int alphabeta(u64 black, u64 white, int depth, int alpha, int beta);

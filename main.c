@@ -7,9 +7,12 @@
 #include <stdlib.h>
 
 #define AB_DEPTH 10
-#define ENDGAME_DEPTH 41
+#define ENDGAME_DEPTH 40
 
 int main(int argc, char **argv) {
+    // Initialize transposition table
+    initializeTT();
+
     // Setup board and move pointers
     u64 black, white;
     black = STARTING_BOARD_BLACK;
@@ -40,7 +43,10 @@ int main(int argc, char **argv) {
             if (sideToMove) {
                 white = doMove(white, black, SQUARE(x, y));
                 black &= ~white;
-                if (TC(black, white) >= ENDGAME_DEPTH) result = endgameAlphabetaMove(black, white, -1, 1);
+                if (TC(black, white) >= ENDGAME_DEPTH) {
+                    result = endgameAlphabetaMove(black, white, 0, 1);
+                    if (result == 0) result = endgameAlphabetaMove(black, white, -1, 0);
+                }
                 else result = alphabetaMove(black, white, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {
@@ -51,7 +57,10 @@ int main(int argc, char **argv) {
             else {
                 black = doMove(black, white, SQUARE(x, y));
                 white &= ~black;
-                if (TC(black, white) >= ENDGAME_DEPTH) result = endgameAlphabetaMove(white, black, -1, 1);
+                if (TC(black, white) >= ENDGAME_DEPTH) {
+                    result = endgameAlphabetaMove(white, black, 0, 1);
+                    if (result == 0) result = endgameAlphabetaMove(white, black, -1, 0);
+                }
                 else result = alphabetaMove(white, black, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {
@@ -74,7 +83,10 @@ int main(int argc, char **argv) {
 
             // Casework based on player to move
             if (sideToMove) {
-                if (TC(black, white) >= ENDGAME_DEPTH) result = endgameAlphabetaMove(black, white, -1, 1);
+                if (TC(black, white) >= ENDGAME_DEPTH) {
+                    result = endgameAlphabetaMove(black, white, 0, 1);
+                    if (result == 0) result = endgameAlphabetaMove(black, white, -1, 0);
+                }
                 else result = alphabetaMove(black, white, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {
@@ -83,7 +95,10 @@ int main(int argc, char **argv) {
                 }
             }
             else {
-                if (TC(black, white) >= ENDGAME_DEPTH) result = endgameAlphabetaMove(white, black, -1, 1);
+                if (TC(black, white) >= ENDGAME_DEPTH) {
+                    result = endgameAlphabetaMove(white, black, 0, 1);
+                    if (result == 0) result = endgameAlphabetaMove(white, black, -1, 0);
+                }
                 else result = alphabetaMove(white, black, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {

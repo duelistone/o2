@@ -72,7 +72,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
     if (depth <= 0) {
         return (eval(black, white) * 256) | NULL_MOVE; // No move should be given for depth 0 search
     }
-
+    
     // Save initial board state
     u64 originalBlack = black;
     u64 originalWhite = white;
@@ -163,6 +163,65 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         alpha = -tempInt;
     }
 
+    // Save original alpha and beta
+    int originalAlpha = alpha;
+    int originalBeta = beta;
+
+    // Calculate total count for usage later
+    int totalCount = TC(originalBlack, originalWhite);
+
+    // Check endgame transposition table
+    #if COUNT_COLLISIONS
+    int canCollide = 1; // To count collisions later
+    #endif
+    if (totalCount < STOP_HASHING_TC) {
+        u32 hash = boardHash(originalBlack, originalWhite);
+        if (endgameTT[hash].black == originalBlack && endgameTT[hash].white == originalWhite) {
+            #if COUNT_COLLISIONS
+            canCollide = 0;
+            #endif
+            ttHits++;
+            u8 ee = EXTRACT_ENDGAME_TT_EVAL(endgameTT[hash].data);
+            if (ee < 2) {
+                return ee;
+            }
+            else if (ee == WHITE_WIN) {
+                return -1;
+            }
+            else if (ee == NOT_BLACK_WIN) {
+                if (alpha == 0) {
+                    return 0; // Same window as original search
+                }
+                else beta = 0; // We know there is no black win, so we can bring beta down
+            }
+            else if (ee == NOT_WHITE_WIN) {
+                if (beta == 0) {
+                    return 0;
+                }
+                else alpha = 0;
+            }
+        }
+    }
+
+    // Declare result variable (to store results of endgame searches, and later final result)
+    int result;
+
+    // Try alphabeta search suggestion
+    if (totalCount < STOP_USING_EVAL - ENDGAME_AB_DEPTH) {
+        int abResult = alphabetaMove(black, white, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
+        black = doMove(originalBlack, originalWhite, EXTRACT_MOVE(abResult));
+        white = originalWhite & ~black;
+        if (totalCount == 61) {
+            result = -endgameAlphabeta62(white, black, -beta, -alpha);
+        }
+        else {
+            result = -endgameAlphabeta(white, black, -beta, -alpha);
+        }
+        alpha = (result > alpha) ? result : alpha;
+
+        if (alpha >= beta) goto save_to_hash;
+    }
+
     // The legal moves will be ordered so that moves giving the opponent
     // less mobility appear first.
 
@@ -202,7 +261,7 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
     for (size_t i = 0; alpha < beta && i < numLegalMoves; i++) {
         // Recursive call and update alpha
         int result;
-        if (TC(originalBlack, originalWhite) == 61) {
+        if (totalCount == 61) {
             result = -endgameAlphabeta62(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
         }
         else {
@@ -211,7 +270,42 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         alpha = (result > alpha) ? result : alpha;
     }
 
-    return factor * alpha;
+    save_to_hash:
+    result = factor * alpha;
+
+    // Save results to hash
+    if (totalCount < STOP_HASHING_TC) {
+        u32 hash = boardHash(originalBlack, originalWhite);
+        if (endgameTT[hash].black 
+                                  #if COUNT_COLLISIONS
+                                  && canCollide
+                                  #endif
+                                  ) {
+            #if COUNT_COLLISIONS
+            collisions[hash]++;
+            #endif
+            // Replacement scheme is always replace
+        }
+        endgameTT[hash].black = originalBlack;
+        endgameTT[hash].white = originalWhite;
+        if (result <= -1) {
+            endgameTT[hash].data = WHITE_WIN;
+        }
+        else if (result >= 1) {
+            endgameTT[hash].data = BLACK_WIN;
+        }
+        else if (originalAlpha == -1 && originalBeta == 1) {
+            endgameTT[hash].data = DRAW;
+        }
+        else if (originalAlpha == -1) {
+            endgameTT[hash].data = NOT_WHITE_WIN;
+        }
+        else if (originalAlpha == 0) {
+            endgameTT[hash].data = NOT_BLACK_WIN;
+        }
+    }
+
+    return result;
 }
 
 int endgameAlphabeta63(u64 black, u64 white) {
