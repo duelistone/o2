@@ -42,12 +42,11 @@ int main(int argc, char **argv) {
             if (sideToMove) {
                 white = doMove(white, black, SQUARE(x, y));
                 black &= ~white;
-                AB_SCOUT_STDERR(black, white);
                 if (TC(black, white) >= ENDGAME_START) {
                     result = endgameAlphabetaMove(black, white, 0, 1);
                     if (result == 0) result = endgameAlphabetaMove(black, white, -1, 0);
                 }
-                else result = alphabetaMove(black, white, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
+                else result = alphabetaMove(black, white, AB_DEPTH, LOSING_EVAL, WINNING_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {
                     black = doMove(black, white, move);
@@ -57,12 +56,11 @@ int main(int argc, char **argv) {
             else {
                 black = doMove(black, white, SQUARE(x, y));
                 white &= ~black;
-                AB_SCOUT_STDERR(white, black);
                 if (TC(black, white) >= ENDGAME_START) {
                     result = endgameAlphabetaMove(white, black, 0, 1);
                     if (result == 0) result = endgameAlphabetaMove(white, black, -1, 0);
                 }
-                else result = alphabetaMove(white, black, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
+                else result = alphabetaMove(white, black, AB_DEPTH, LOSING_EVAL, WINNING_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {
                     white = doMove(white, black, move);
@@ -84,12 +82,11 @@ int main(int argc, char **argv) {
 
             // Casework based on player to move
             if (sideToMove) {
-                AB_SCOUT_STDERR(black, white);
                 if (TC(black, white) >= ENDGAME_START) {
                     result = endgameAlphabetaMove(black, white, 0, 1);
                     if (result == 0) result = endgameAlphabetaMove(black, white, -1, 0);
                 }
-                else result = alphabetaMove(black, white, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
+                else result = alphabetaMove(black, white, AB_DEPTH, LOSING_EVAL, WINNING_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {
                     black = doMove(black, white, move);
@@ -97,12 +94,11 @@ int main(int argc, char **argv) {
                 }
             }
             else {
-                AB_SCOUT_STDERR(white, black);
                 if (TC(black, white) >= ENDGAME_START) {
                     result = endgameAlphabetaMove(white, black, 0, 1);
                     if (result == 0) result = endgameAlphabetaMove(white, black, -1, 0);
                 }
-                else result = alphabetaMove(white, black, AB_DEPTH, -MAX_EVAL, MAX_EVAL);
+                else result = alphabetaMove(white, black, AB_DEPTH, LOSING_EVAL, WINNING_EVAL);
                 move = EXTRACT_MOVE(result);
                 if (move != NULL_MOVE) {
                     white = doMove(white, black, move);

@@ -23,7 +23,7 @@ ttEntry endgameTT[ENDGAME_TT_LEN]; // Currently 512 MB, should be initialized to
 
 #if COUNT_COLLISIONS
 // For info on hash table usage; this should be removed when not debugging
-int collisions[ENDGAME_TT_LEN]; // Should be initialized to all -1
+int collisions[ENDGAME_TT_LEN]; // Should be initialized
 #endif
 
 // For counting tt hits in debugging

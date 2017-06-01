@@ -234,4 +234,13 @@ for (int i = 1; i <= 12; i++) {\
     fprintf(stderr, "Depth %d: eval %d, move %u\n", i, ee, move);\
 }
 
+// When to start considering a move as so bad it's clearly losing
+#define LOSING_EVAL -150
+
+// ...or so good it's clearly winning
+#define WINNING_EVAL 150
+
+// Definition to decide if the previous 2 constants should be used in alphabeta search
+#define USE_LOSING_EVAL 1
+
 #endif

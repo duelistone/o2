@@ -2,6 +2,15 @@
 
 #include "search.h"
 
+// Comparison function for fastest first heuristic
+// Look at the endgame alphabeta function to see the array
+// this is working on.
+int ffComp(const void *a, const void *b) {
+    // Want to compare the (unsigned) numbers formed by last of 
+    // the three u64's.
+    return (int) *((u64 *) a + 2) - (int) *((u64 *) b + 2);
+}
+
 int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
     // Deal with no legal moves possibility
     u64 lm = findLegalMoves(black, white);
@@ -24,7 +33,24 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Iterative deepening
     if (depth > 4) {
-        u8 firstMove = EXTRACT_MOVE(alphabetaMove(black, white, 2, alpha, beta));
+        // Shallow alphabeta search
+        int shallowResult = alphabetaMove(black, white, 2, alpha, beta);
+        
+        #if USE_LOSING_EVAL
+        // Get eval of shallow search
+        int ee = EXTRACT_EVAL(shallowResult);
+        
+        // Check if move is clearly worse or better than alpha, and check if depth 1 and depth 0 search agree
+        if (ee < alpha + LOSING_EVAL && alphabeta(black, white, 1, alpha, beta) < alpha + LOSING_EVAL && eval(black, white) < alpha + LOSING_EVAL) {
+            return alpha;
+        }
+        else if (ee > beta + WINNING_EVAL && alphabeta(black, white, 1, beta, beta) > beta + WINNING_EVAL && eval(black, white) > beta + WINNING_EVAL) {
+            return beta;
+        }
+        #endif
+
+        // Get first move to try
+        u8 firstMove = EXTRACT_MOVE(shallowResult);
 
         // Try first move
         lm ^= BIT(firstMove);
@@ -48,20 +74,69 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
         if (result > alpha) alpha = result;
     }
 
-    // Main alphabeta algorithm
-    while (lm && (alpha < beta)) {
-        // Extract next legal move and make the move
-        int index = CLZ(lm);
-        lm ^= BIT(index);
-        black = doMove(originalBlack, originalWhite, index);
-        white = originalWhite & ~black;
+    // Fastest first heuristic while depth is large enough
+    if (depth > 3) {
+        // The legal moves will be ordered so that moves giving the opponent
+        // less mobility appear first.
 
-        // Recursive call, pvs, and update alpha
-        int result = -alphabeta(white, black, depth - 1, -alpha - 1, -alpha);
-        if (result > alpha) {
-            // Failed high
-            if (result >= beta) return beta; // Avoid calling alphabeta with alpha >= beta
-            alpha = -alphabeta(white, black, depth - 1, -beta, -alpha);
+        // Array for moves, boards, and the number of legal moves each gives
+        // Each "entry" is 2 * 8 (black and white boards) + 8 (score) = 3 * 8 bytes
+        u64 arr[32 * 3];
+
+        // Index to keep track of place in arrays
+        u8 moveIndex = 0;
+
+        // Total number of legal moves
+        u8 numLegalMoves = PC(lm);
+
+        // Loop through legal moves
+        while (lm) {
+            // Extract move
+            u8 square = CLZ(lm);
+            lm ^= BIT(square);
+
+            // Make move
+            black = doMove(originalBlack, originalWhite, square);
+            white = originalWhite & ~black;
+
+            // Store board, move, and number of opponent's legal moves
+            arr[3 * moveIndex] = black;
+            arr[3 * moveIndex + 1] = white;
+            arr[3 * moveIndex + 2] = PC(findLegalMoves(white, black));
+
+            // Update moveIndex
+            moveIndex++;
+        }
+
+        // Sort
+        qsort(arr, numLegalMoves, 3 * sizeof(u64), ffComp);
+
+        // Main alphabeta algorithm
+        for (size_t i = 0; alpha < beta && i < numLegalMoves; i++) {
+            // Recursive call and update alpha
+            int result = -alphabeta(arr[3 * i + 1], arr[3 * i], depth - 1, -alpha - 1, -alpha);
+            if (result > alpha) {
+                if (result >= beta) return beta;
+                alpha = -alphabeta(arr[3 * i + 1], arr[3 * i], depth - 1, -beta, -result);
+            }
+        }
+    }
+    else {
+        // Main alphabeta algorithm
+        while (lm && (alpha < beta)) {
+            // Extract next legal move and make the move
+            int index = CLZ(lm);
+            lm ^= BIT(index);
+            black = doMove(originalBlack, originalWhite, index);
+            white = originalWhite & ~black;
+
+            // Recursive call, pvs, and update alpha
+            int result = -alphabeta(white, black, depth - 1, -alpha - 1, -alpha);
+            if (result > alpha) {
+                // Failed high
+                if (result >= beta) return beta; // Avoid calling alphabeta with alpha >= beta
+                alpha = -alphabeta(white, black, depth - 1, -beta, -result);
+            }
         }
     }
 
@@ -93,7 +168,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Iterative deepening
     if (depth > 1) {
-        move = EXTRACT_MOVE(alphabetaMove(black, white, depth - 1, alpha, beta));
+        move = EXTRACT_MOVE(alphabetaMove(originalBlack, originalWhite, depth - 1, alpha, beta));
 
         // Try first move
         lm ^= BIT(move);
@@ -129,23 +204,13 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
                 alpha = beta; // This will break the loop before the next iteration
             }
             else {
-                alpha = -alphabeta(white, black, depth - 1, -beta, MAX_EVAL);
+                alpha = -alphabeta(white, black, depth - 1, -beta, -result);
             }
-            //printf("changing move to %d depth %d\n", index, depth);
             move = index;
         }
     }
 
     return (alpha * 256) | move;
-}
-
-// Comparison function for fastest first heuristic
-// Look at the endgame alphabeta function to see the array
-// this is working on.
-int ffComp(const void *a, const void *b) {
-    // Want to compare the (unsigned) numbers formed by last of 
-    // the three u64's.
-    return (int) *((u64 *) a + 2) - (int) *((u64 *) b + 2);
 }
 
 int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {

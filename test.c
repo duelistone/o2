@@ -1,7 +1,7 @@
 #include "search.h"
 #include <check.h>
 
-#define FFO_ENDGAME_TESTS 1
+#define FFO_ENDGAME_TESTS 0
 
 int pv(u64 black, u64 white, int depth, u8 *moves);
 void doMoves(u64 *black, u64 *white, u8 *moves, int numMoves);
