@@ -10,8 +10,12 @@
 // Struct for an endgame transposition table entry
 // The structure of the data field is as follows, 
 // from MSB to LSB:
-// numNodes (unsigned 61 bits)
 // eval     (unsigned 3 bits, using definitions for types of endgame evals)
+// In midgame search, we instead have
+// eval     (unsigned 16 bits, 2^15 + signed eval)
+// alpha    (unsigned 16 bits, 2^15 + signed eval)
+// beta     (unsigned 16 bits, 2^15 + signed eval)
+// depth    (unsigned 5 bits) 
 typedef struct {
     u64 black;
     u64 white;
@@ -24,10 +28,11 @@ ttEntry endgameTT[ENDGAME_TT_LEN]; // Currently 512 MB, should be initialized to
 #if COUNT_COLLISIONS
 // For info on hash table usage; this should be removed when not debugging
 int collisions[ENDGAME_TT_LEN]; // Should be initialized
-#endif
 
 // For counting tt hits in debugging
 size_t ttHits;
+#endif
+
 
 void initializeTT();
 

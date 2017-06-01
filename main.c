@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define AB_DEPTH 12
+#define AB_DEPTH 14
 
 int main(int argc, char **argv) {
     // Initialize transposition table
@@ -22,6 +22,8 @@ int main(int argc, char **argv) {
     int x, y, secondsLeft;
     int counter = 0;
     int sideToMove = WHITE;
+
+    int endgameStarted = 0;
 
     // Notify readiness
     puts("Init done");
@@ -43,8 +45,12 @@ int main(int argc, char **argv) {
                 white = doMove(white, black, SQUARE(x, y));
                 black &= ~white;
                 if (TC(black, white) >= ENDGAME_START) {
+                    if (!endgameStarted) {
+                        initializeTT();
+                        endgameStarted = 1;
+                    }
                     result = endgameAlphabetaMove(black, white, 0, 1);
-                    if (result == 0) result = endgameAlphabetaMove(black, white, -1, 0);
+                    if (EXTRACT_EVAL(result) == 0) result = endgameAlphabetaMove(black, white, -1, 0);
                 }
                 else result = alphabetaMove(black, white, AB_DEPTH, LOSING_EVAL, WINNING_EVAL);
                 move = EXTRACT_MOVE(result);
@@ -57,8 +63,12 @@ int main(int argc, char **argv) {
                 black = doMove(black, white, SQUARE(x, y));
                 white &= ~black;
                 if (TC(black, white) >= ENDGAME_START) {
+                    if (!endgameStarted) {
+                        initializeTT();
+                        endgameStarted = 1;
+                    }
                     result = endgameAlphabetaMove(white, black, 0, 1);
-                    if (result == 0) result = endgameAlphabetaMove(white, black, -1, 0);
+                    if (EXTRACT_EVAL(result) == 0) result = endgameAlphabetaMove(white, black, -1, 0);
                 }
                 else result = alphabetaMove(white, black, AB_DEPTH, LOSING_EVAL, WINNING_EVAL);
                 move = EXTRACT_MOVE(result);
@@ -83,6 +93,10 @@ int main(int argc, char **argv) {
             // Casework based on player to move
             if (sideToMove) {
                 if (TC(black, white) >= ENDGAME_START) {
+                    if (!endgameStarted) {
+                        initializeTT();
+                        endgameStarted = 1;
+                    }
                     result = endgameAlphabetaMove(black, white, 0, 1);
                     if (result == 0) result = endgameAlphabetaMove(black, white, -1, 0);
                 }
@@ -95,6 +109,10 @@ int main(int argc, char **argv) {
             }
             else {
                 if (TC(black, white) >= ENDGAME_START) {
+                    if (!endgameStarted) {
+                        initializeTT();
+                        endgameStarted = 1;
+                    }
                     result = endgameAlphabetaMove(white, black, 0, 1);
                     if (result == 0) result = endgameAlphabetaMove(white, black, -1, 0);
                 }

@@ -4,6 +4,11 @@
 
 // Some global preprocessor definitions
 
+// Endgame start
+// The number of discs after which the endgame is considered to start
+// endgameAlphabeta should not be called at an earlier depth.
+#define ENDGAME_START 38
+
 // 64 bit integer
 #define u64 uint64_t
 
@@ -182,11 +187,6 @@
 #define EXTRACT_EVAL(x) ((x & ~0xFF) / 256)
 #define EXTRACT_MOVE(x) (x & 0xFF)
 
-// Endgame start
-// The number of discs after which the endgame is considered to start
-// endgameAlphabeta should not be called at an earlier depth.
-#define ENDGAME_START 38
-
 // Special constant for experimental mobility score formula
 #define TENTH_POWER_OF_FOUR 1.148698
 
@@ -242,5 +242,16 @@ for (int i = 1; i <= 12; i++) {\
 
 // Definition to decide if the previous 2 constants should be used in alphabeta search
 #define USE_LOSING_EVAL 1
+
+// Macros to work with midgame transposition table's data fields
+#define CONSTRUCT_MIDGAME_TT_DATA(eval, alpha, beta, depth) ((((u64) depth) << 48) | (((((u64) beta) + (1u << 15)) & 0xFFFFu) << 32) | (((((u64) alpha) + (1u << 15)) & 0xFFFFu) << 16) | ((((u64) eval) + (1u << 15)) & 0xFFFFu))
+#define EXTRACT_MIDGAME_TT_EVAL(data) (((data) & 0xFFFFu) - (1u << 15))
+#define EXTRACT_MIDGAME_TT_ALPHA(data) ((((data) >> 16) & 0xFFFFu) - (1u << 15))
+#define EXTRACT_MIDGAME_TT_BETA(data) ((((data) >> 32) & 0xFFFFu) - (1u << 15))
+#define EXTRACT_MIDGAME_TT_DEPTH(data) (((data) >> 48) & 0x1Fu)
+
+// At what depth to stop checking transposition table
+// Must be greater than or equal to ENDGAME_AB_DEPTH
+#define STOP_USING_TT_DEPTH 4
 
 #endif

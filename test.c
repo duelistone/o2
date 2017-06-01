@@ -33,6 +33,15 @@ END_TEST
 
 START_TEST(endgameAlphabetaMove_bug_1)
 {
+    // initializeTT();
+    // u64 black = F2 | B3 | C3 | F3 | G3 | B4 | C4 | G4 | H4 | B5 | A6 | G5
+    //           | H5 | G6 | H6;
+    // u64 white = D1 | E1 | D2 | E2 | E3 | D4 | F4 | C5 | C6 | D5 | D6 | E5 | E6 | F6 | C7 | C8 | E7
+    //           | F7 | F8 | C2 | D3 | E4 | F5;
+    // printBoard(black, white);
+    // ck_assert_int_eq(endgameAlphabeta(black, white, -1, 0), 0);
+    // ck_assert_int_eq(endgameAlphabeta(black, white, 0, 1), 0);
+    
     // u64 black = A1 | A2 | A3 | A4 | A5 | A6 | B2 | B3 | B6 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8
     //           | D4 | D6 | E3 | E5 | F4 | F5 | F6 | F7 | F8;
     // u64 white = B4 | B5 | D1 | E1 | D2 | E2 | D3 | F3 | B4 | E4 | B5 | D5 | E6 | D7 | E7 | D8 | E8;

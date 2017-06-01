@@ -22,14 +22,69 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
         return -alphabeta(white, black, depth - 1, -beta, -alpha);
     }
 
+    // Save initial board state
+    u64 originalBlack = black;
+    u64 originalWhite = white;
+
     // Return static evaluation at depth 0 or less (yes, less is possible due to lm == 0 case)
     if (depth <= 0) {
         return eval(black, white);
     }
+    else if (depth == 1) {
+        // Main alphabeta algorithm
+        while (lm && (alpha < beta)) {
+            // Extract next legal move and make the move
+            int index = CLZ(lm);
+            lm ^= BIT(index);
+            black = doMove(originalBlack, originalWhite, index);
+            white = originalWhite & ~black;
+
+            // Get eval
+            int result = -eval(white, black);
+            alpha = (result > alpha) ? result : alpha;
+        }
+        return alpha;
+    }
+        
+    // Save original alpha and beta
+    int originalAlpha = alpha;
+    int originalBeta = beta;
     
-    // Save initial board state
-    u64 originalBlack = black;
-    u64 originalWhite = white;
+    // Check midgame transposition table (same endgameTT is used for both to save space)
+    #if COUNT_COLLISIONS
+    int canCollide = 1; // To count collisions later
+    #endif
+    if (depth > STOP_USING_TT_DEPTH) {
+        u32 hash = boardHash(originalBlack, originalWhite);
+        if (endgameTT[hash].black == originalBlack && endgameTT[hash].white == originalWhite) {
+            #if COUNT_COLLISIONS
+            canCollide = 0;
+            ttHits++;
+            #endif
+            u64 data = endgameTT[hash].data;
+            int d = EXTRACT_MIDGAME_TT_DEPTH(data);
+            if (depth == d) {
+                int ee = EXTRACT_MIDGAME_TT_EVAL(data);
+                int a = EXTRACT_MIDGAME_TT_ALPHA(data);
+                int b = EXTRACT_MIDGAME_TT_BETA(data);
+                if (a < ee && ee < b) {
+                    return ee;
+                }
+                else if (ee >= b && b >= beta) {
+                    return beta;
+                }
+                else if (ee >= b) {
+                    alpha = b;
+                }
+                else if (ee <= a && a <= alpha) {
+                    return alpha;
+                }
+                else if (ee <= a) {
+                    beta = a;
+                }
+            }
+        }
+    }
 
     // Iterative deepening
     if (depth > 4) {
@@ -40,7 +95,10 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
         // Get eval of shallow search
         int ee = EXTRACT_EVAL(shallowResult);
         
-        // Check if move is clearly worse or better than alpha, and check if depth 1 and depth 0 search agree
+        // Check if move is clearly worse or better than alpha, 
+        // and check if depth 1 and depth 0 search agree
+        // Note that pruned results aren't saved in the transposition table,
+        // at least for now
         if (ee < alpha + LOSING_EVAL && alphabeta(black, white, 1, alpha, beta) < alpha + LOSING_EVAL && eval(black, white) < alpha + LOSING_EVAL) {
             return alpha;
         }
@@ -116,7 +174,10 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
             // Recursive call and update alpha
             int result = -alphabeta(arr[3 * i + 1], arr[3 * i], depth - 1, -alpha - 1, -alpha);
             if (result > alpha) {
-                if (result >= beta) return beta;
+                if (result >= beta) {
+                    alpha = beta;
+                    goto save_to_hash;
+                }
                 alpha = -alphabeta(arr[3 * i + 1], arr[3 * i], depth - 1, -beta, -result);
             }
         }
@@ -134,10 +195,33 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
             int result = -alphabeta(white, black, depth - 1, -alpha - 1, -alpha);
             if (result > alpha) {
                 // Failed high
-                if (result >= beta) return beta; // Avoid calling alphabeta with alpha >= beta
+                if (result >= beta) {
+                    alpha = beta;
+                    goto save_to_hash;
+                }
                 alpha = -alphabeta(white, black, depth - 1, -beta, -result);
             }
         }
+    }
+
+    save_to_hash:
+
+    // Save results to hash
+    if (depth > STOP_USING_TT_DEPTH) {
+        u32 hash = boardHash(originalBlack, originalWhite);
+        if (endgameTT[hash].black 
+                                  #if COUNT_COLLISIONS
+                                  && canCollide
+                                  #endif
+                                  ) {
+            #if COUNT_COLLISIONS
+            collisions[hash]++;
+            #endif
+            // Replacement scheme is always replace
+        }
+            endgameTT[hash].black = originalBlack;
+            endgameTT[hash].white = originalWhite;
+            endgameTT[hash].data = CONSTRUCT_MIDGAME_TT_DATA(alpha, originalAlpha, originalBeta, depth);
     }
 
     return alpha;
@@ -255,8 +339,8 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         if (endgameTT[hash].black == originalBlack && endgameTT[hash].white == originalWhite) {
             #if COUNT_COLLISIONS
             canCollide = 0;
-            #endif
             ttHits++;
+            #endif
             u8 ee = EXTRACT_ENDGAME_TT_EVAL(endgameTT[hash].data);
             if (ee < 2) {
                 return ee;
