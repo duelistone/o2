@@ -23,9 +23,20 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
     u64 originalWhite = white;
 
     // Iterative deepening
-    if (depth > 1) {
-        //puts("Depth not 1");
-        u8 firstMove = EXTRACT_MOVE(alphabetaMove(black, white, depth - 1, alpha, beta));
+    if (depth > 4) {
+        u8 firstMove = EXTRACT_MOVE(alphabetaMove(black, white, 2, alpha, beta));
+
+        // Try first move
+        lm ^= BIT(firstMove);
+        black = doMove(originalBlack, originalWhite, firstMove);
+        white = originalWhite & ~black;
+
+        // Recursive call and update alpha
+        int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
+        if (result > alpha) alpha = result;
+    }
+    else if (depth > 2) {
+        u8 firstMove = EXTRACT_MOVE(alphabetaMove(black, white, 1, alpha, beta));
 
         // Try first move
         lm ^= BIT(firstMove);

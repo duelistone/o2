@@ -118,6 +118,7 @@
     double eeM = 1 - int_pow(1 - 0.01 * absDiff, exponent); // No explanation for this formula yet, still testing
     eeM = (diff > 0) ? eeM : -eeM;
 
+    #if 0
     // Regional mobility
     double eeRM = 0;
     u64 regions[15];
@@ -151,6 +152,9 @@
         eeRM += score;
     }
     eeRM /= numRegions;
+    #else 
+    double eeRM = 0;
+    #endif
 
     // Putting it all together
     double cornerWeight = 0.51;

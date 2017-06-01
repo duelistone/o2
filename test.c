@@ -1,6 +1,8 @@
 #include "search.h"
 #include <check.h>
 
+#define FFO_ENDGAME_TESTS 1
+
 int pv(u64 black, u64 white, int depth, u8 *moves);
 void doMoves(u64 *black, u64 *white, u8 *moves, int numMoves);
 
@@ -404,6 +406,7 @@ START_TEST(endgameAlphabeta_totalCount_62)
 }
 END_TEST
 
+#if FFO_ENDGAME_TESTS
 // Time should be mostly just initializeTT time
 START_TEST(ffo_endgame_40)
 {
@@ -535,6 +538,7 @@ START_TEST(ffo_endgame_45)
     ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
 }
 END_TEST
+#endif
 
 // Best time: 101 ns / call
 START_TEST(endgameAlphabeta_totalCount_62x7)
@@ -635,10 +639,12 @@ Suite * money_suite(void)
     ADD_TEST(endgameAlphabetaMove_totalCount_63);
     ADD_TEST(endgameAlphabetaMove_totalCount_63_no_legal_moves);
     ADD_TEST(endgameAlphabeta_totalCount_62);
+    #if FFO_ENDGAME_TESTS
     ADD_TEST(ffo_endgame_40);
     ADD_TEST(ffo_endgame_41);
     ADD_TEST(ffo_endgame_42);
     ADD_TEST(ffo_endgame_45);
+    #endif
     ADD_TEST(endgameAlphabeta_totalCount_62x7);
     ADD_TEST(endgameAlphabeta_totalCount_63x7);
     ADD_TEST(eval_timing_x6);

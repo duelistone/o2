@@ -15,7 +15,7 @@ test: test.o search.o board.o hash.o tt.o
 test.o: test.c search.h defs.h tt.h hash.h
 	$(CC) $(CFLAGS) -c test.c
 
-board.o: board.c board.h defs.h
+board.o: board.c eval_code.c board.h defs.h
 	$(CC) $(CFLAGS) -c board.c
 
 search.o: search.c search.h board.h tt.h hash.h defs.h 

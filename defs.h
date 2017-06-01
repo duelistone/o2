@@ -185,7 +185,7 @@
 // Endgame start
 // The number of discs after which the endgame is considered to start
 // endgameAlphabeta should not be called at an earlier depth.
-#define ENDGAME_START 41
+#define ENDGAME_START 38
 
 // Special constant for experimental mobility score formula
 #define TENTH_POWER_OF_FOUR 1.148698
@@ -217,4 +217,21 @@
 
 // Determine whether the number of transposition table collisions should be counted
 #define COUNT_COLLISIONS 0
+
+// Describes searches at first 12 depths
+#define AB_SCOUT(black, white) \
+for (int i = 1; i <= 12; i++) {\
+    int result = alphabetaMove(black, white, i, MIN_EVAL, MAX_EVAL);\
+    u8 move = EXTRACT_MOVE(result);\
+    int ee = EXTRACT_EVAL(result);\
+    printf("Depth %d: eval %d, move %u\n", i, ee, move);\
+}
+#define AB_SCOUT_STDERR(black, white) \
+for (int i = 1; i <= 12; i++) {\
+    int result = alphabetaMove(black, white, i, MIN_EVAL, MAX_EVAL);\
+    u8 move = EXTRACT_MOVE(result);\
+    int ee = EXTRACT_EVAL(result);\
+    fprintf(stderr, "Depth %d: eval %d, move %u\n", i, ee, move);\
+}
+
 #endif
