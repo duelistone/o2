@@ -368,8 +368,9 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
 
     // Try alphabeta search suggestion
     if (totalCount < STOP_USING_EVAL - ENDGAME_AB_DEPTH) {
-        int abResult = alphabetaMove(black, white, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
-        black = doMove(originalBlack, originalWhite, EXTRACT_MOVE(abResult));
+        int abResult = alphabetaMove(originalBlack, originalWhite, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
+        u8 move = EXTRACT_MOVE(abResult);
+        black = doMove(originalBlack, originalWhite, move);
         white = originalWhite & ~black;
         if (totalCount == 61) {
             result = -endgameAlphabeta62(white, black, -beta, -alpha);
@@ -379,7 +380,12 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         }
         alpha = (result > alpha) ? result : alpha;
 
+        // Check if this move is good enough to return immediately
         if (alpha >= beta) goto save_to_hash;
+
+        // Remove move from lm
+        lm ^= BIT(move);
+        numLegalMoves--;
     }
 
     // Loop through legal moves
@@ -541,14 +547,18 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
 
     // Try alphabeta search suggestion
     if (totalCount < STOP_USING_EVAL - ENDGAME_AB_DEPTH) {
-        int abResult = alphabetaMove(black, white, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
+        int abResult = alphabetaMove(originalBlack, originalWhite, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
         move = EXTRACT_MOVE(abResult);
         black = doMove(originalBlack, originalWhite, move);
         white = originalWhite & ~black;
         result = -endgameAlphabeta(white, black, -beta, -alpha);
         alpha = (result > alpha) ? result : alpha;
 
+        // Check if this move is good enough to return immediately
         if (alpha >= beta) return (256 * beta) | move;
+        
+        // Remove tried move from lm
+        lm ^= BIT(move);
     }
 
     // Total number of legal moves
