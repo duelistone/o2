@@ -7,7 +7,7 @@
 // Endgame start
 // The number of discs after which the endgame is considered to start
 // endgameAlphabeta should not be called at an earlier depth.
-#define ENDGAME_START 38
+#define ENDGAME_START 36
 
 // 64 bit integer
 #define u64 uint64_t

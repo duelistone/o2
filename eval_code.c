@@ -1,4 +1,4 @@
-    // The common code for the eval functions is here.
+// The common code for the eval functions is here.
     // This is meant to be included into the eval functions in board.c
     u64 taken = black | white;
     u64 empty = ~taken;
@@ -73,9 +73,12 @@
         c_region |= shifter(c_region) & black;\
         c_region |= shifter(c_region) & black;\
         c_region |= shifter(c_region) & black;\
-        eeC -= 0.8 - PC(c_region) * 0.1;\
-        c_region = shifter(c_region) & empty;\
-        if (c_region && (shifter(c_region) & white)) poisonBlack |= c_region;\
+        c_region |= shifter(c_region) & black;\
+        if (PC(c_region) < 6) {\
+            eeC -= 0.8 - PC(c_region) * 0.1;\
+            c_region = shifter(c_region) & empty & ~CORNERS;\
+            if (c_region && (shifter(c_region) & white)) poisonBlack |= c_region;\
+        }\
     }\
     else if ((white & ((a) | (b))) == (b)) {\
         u64 c_region = (b);\
@@ -83,9 +86,12 @@
         c_region |= shifter(c_region) & white;\
         c_region |= shifter(c_region) & white;\
         c_region |= shifter(c_region) & white;\
-        eeC += 0.8 - PC(c_region) * 0.1;\
-        c_region = shifter(c_region) & empty;\
-        if (c_region && (shifter(c_region) & black)) poisonWhite |= c_region;\
+        c_region |= shifter(c_region) & white;\
+        if (PC(c_region) < 6) {\
+            eeC += 0.8 - PC(c_region) * 0.1;\
+            c_region = shifter(c_region) & empty & ~CORNERS;\
+            if (c_region && (shifter(c_region) & black)) poisonWhite |= c_region;\
+        }\
     }
     CSQS(A1, B1, SHIFT_RIGHT);
     CSQS(A1, A2, SHIFT_DOWN);
