@@ -54,8 +54,9 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
     #if COUNT_COLLISIONS
     int canCollide = 1; // To count collisions later
     #endif
+    u32 hash;
     if (depth > STOP_USING_TT_DEPTH) {
-        u32 hash = boardHash(originalBlack, originalWhite);
+        hash = boardHash(originalBlack, originalWhite);
         if (endgameTT[hash].black == originalBlack && endgameTT[hash].white == originalWhite) {
             #if COUNT_COLLISIONS
             canCollide = 0;
@@ -208,7 +209,6 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Save results to hash
     if (depth > STOP_USING_TT_DEPTH) {
-        u32 hash = boardHash(originalBlack, originalWhite);
         if (endgameTT[hash].black 
                                   #if COUNT_COLLISIONS
                                   && canCollide
@@ -334,8 +334,9 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
     #if COUNT_COLLISIONS
     int canCollide = 1; // To count collisions later
     #endif
+    u32 hash;
     if (totalCount < STOP_HASHING_TC) {
-        u32 hash = boardHash(originalBlack, originalWhite);
+        hash = boardHash(originalBlack, originalWhite);
         if (endgameTT[hash].black == originalBlack && endgameTT[hash].white == originalWhite) {
             #if COUNT_COLLISIONS
             canCollide = 0;
@@ -435,7 +436,6 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
 
     // Save results to hash
     if (totalCount < STOP_HASHING_TC) {
-        u32 hash = boardHash(originalBlack, originalWhite);
         if (endgameTT[hash].black 
                                   #if COUNT_COLLISIONS
                                   && canCollide
