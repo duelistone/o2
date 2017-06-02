@@ -92,22 +92,6 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
         // Shallow alphabeta search
         int shallowResult = alphabetaMove(black, white, 2, alpha, beta);
         
-        #if USE_LOSING_EVAL
-        // Get eval of shallow search
-        int ee = EXTRACT_EVAL(shallowResult);
-        
-        // Check if move is clearly worse or better than alpha, 
-        // and check if depth 1 and depth 0 search agree
-        // Note that pruned results aren't saved in the transposition table,
-        // at least for now
-        if (ee < alpha + LOSING_EVAL && alphabeta(black, white, 1, alpha, beta) < alpha + LOSING_EVAL && eval(black, white) < alpha + LOSING_EVAL) {
-            return alpha;
-        }
-        else if (ee > beta + WINNING_EVAL && alphabeta(black, white, 1, beta, beta) > beta + WINNING_EVAL && eval(black, white) > beta + WINNING_EVAL) {
-            return beta;
-        }
-        #endif
-
         // Get first move to try
         u8 firstMove = EXTRACT_MOVE(shallowResult);
 

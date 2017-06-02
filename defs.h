@@ -240,9 +240,6 @@ for (int i = 1; i <= 12; i++) {\
 // ...or so good it's clearly winning
 #define WINNING_EVAL 150
 
-// Definition to decide if the previous 2 constants should be used in alphabeta search
-#define USE_LOSING_EVAL 1
-
 // Macros to work with midgame transposition table's data fields
 #define CONSTRUCT_MIDGAME_TT_DATA(eval, alpha, beta, depth) ((((u64) depth) << 48) | (((((u64) beta) + (1u << 15)) & 0xFFFFu) << 32) | (((((u64) alpha) + (1u << 15)) & 0xFFFFu) << 16) | ((((u64) eval) + (1u << 15)) & 0xFFFFu))
 #define EXTRACT_MIDGAME_TT_EVAL(data) (((data) & 0xFFFFu) - (1u << 15))
