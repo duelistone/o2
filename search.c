@@ -209,6 +209,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Save results to hash
     if (depth > STOP_USING_TT_DEPTH) {
+        #if 0
         if (endgameTT[hash].black 
                                   #if COUNT_COLLISIONS
                                   && canCollide
@@ -219,6 +220,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
             #endif
             // Replacement scheme is always replace
         }
+        #endif
             endgameTT[hash].black = originalBlack;
             endgameTT[hash].white = originalWhite;
             endgameTT[hash].data = CONSTRUCT_MIDGAME_TT_DATA(alpha, originalAlpha, originalBeta, depth);
@@ -436,6 +438,7 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
 
     // Save results to hash
     if (totalCount < STOP_HASHING_TC) {
+        #if 0
         if (endgameTT[hash].black 
                                   #if COUNT_COLLISIONS
                                   && canCollide
@@ -446,6 +449,7 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
             #endif
             // Replacement scheme is always replace
         }
+        #endif
         endgameTT[hash].black = originalBlack;
         endgameTT[hash].white = originalWhite;
         if (result <= -1) {
