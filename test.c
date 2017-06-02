@@ -547,6 +547,18 @@ START_TEST(ffo_endgame_45)
     ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
 }
 END_TEST
+
+// Best time: 31.35 sec
+START_TEST(ffo_endgame_50)
+{
+    initializeTT();
+    u64 black = E1 | C2 | D2 | E2 | E3 | E4 | E5 | E6 | E7 | C5 | G5 | D6;
+    u64 white = B3 | C3 | D3 | B4 | C4 | D4 | B5 | D5 | B6 | C6 | C7 | C8
+              | D7 | F8 | F7 | F6 | G6 | H6 | H5 | F5 | G4 | H4 | F4 | F3
+              | G3 | H3;
+    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
+}
+END_TEST
 #endif
 
 // Best time: 101 ns / call
@@ -653,6 +665,7 @@ Suite * money_suite(void)
     ADD_TEST(ffo_endgame_41);
     ADD_TEST(ffo_endgame_42);
     ADD_TEST(ffo_endgame_45);
+    ADD_TEST(ffo_endgame_50);
     #endif
     ADD_TEST(endgameAlphabeta_totalCount_62x7);
     ADD_TEST(endgameAlphabeta_totalCount_63x7);
