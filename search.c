@@ -6,7 +6,7 @@
 // Look at the endgame alphabeta function to see the array
 // this is working on.
 int ffComp(const void *a, const void *b) {
-    // Want to compare the (unsigned) numbers formed by last of 
+    // Want to compare the (nonnegative) numbers formed by last 8 bits of last of
     // the three u64's.
     return (int) *((u64 *) a + 2) - (int) *((u64 *) b + 2);
 }
@@ -366,6 +366,19 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
     // Declare result variable (to store results of endgame searches, and later final result)
     int result;
 
+    // Total number of legal moves
+    u8 numLegalMoves = PC(lm);
+
+    // The legal moves will be ordered so that moves giving the opponent
+    // less mobility appear first.
+
+    // Array for moves, boards, and the number of legal moves each gives
+    // Each "entry" is 2 * 8 (black and white boards) + 8 (score) = 3 bytes
+    u64 arr[numLegalMoves * 3];
+
+    // Index to keep track of place in arrays
+    u8 moveIndex = 0;
+
     // Try alphabeta search suggestion
     if (totalCount < STOP_USING_EVAL - ENDGAME_AB_DEPTH) {
         int abResult = alphabetaMove(black, white, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
@@ -381,19 +394,6 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
 
         if (alpha >= beta) goto save_to_hash;
     }
-
-    // The legal moves will be ordered so that moves giving the opponent
-    // less mobility appear first.
-
-    // Array for moves, boards, and the number of legal moves each gives
-    // Each "entry" is 2 * 8 (black and white boards) + 8 (score) = 3 bytes
-    u64 arr[(64 - ENDGAME_START) * 3];
-
-    // Index to keep track of place in arrays
-    u8 moveIndex = 0;
-
-    // Total number of legal moves
-    u8 numLegalMoves = PC(lm);
 
     // Loop through legal moves
     while (lm) {
@@ -537,7 +537,7 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
         }
         return (-endgameAlphabeta(white, black, -beta, -alpha) * 256) | NULL_MOVE;
     }
-
+    
     // Set default move
     u8 move = CLZ(lm);
     
@@ -545,19 +545,66 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
     u64 originalBlack = black;
     u64 originalWhite = white;
 
-    // Main alphabeta algorithm
-    while (lm && alpha < beta) {
-        // Extract next legal move and make the move
-        u8 index = CLZ(lm);
-        lm ^= BIT(index);
-        black = doMove(originalBlack, originalWhite, index);
+    // Calculate total count for usage later
+    int totalCount = TC(originalBlack, originalWhite);
+
+    // Declare result variable (to store results of endgame searches, and later final result)
+    int result;
+
+    // Try alphabeta search suggestion
+    if (totalCount < STOP_USING_EVAL - ENDGAME_AB_DEPTH) {
+        int abResult = alphabetaMove(black, white, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
+        move = EXTRACT_MOVE(abResult);
+        black = doMove(originalBlack, originalWhite, move);
+        white = originalWhite & ~black;
+        result = -endgameAlphabeta(white, black, -beta, -alpha);
+        alpha = (result > alpha) ? result : alpha;
+
+        if (alpha >= beta) return (256 * beta) | move;
+    }
+
+    // Total number of legal moves
+    u8 numLegalMoves = PC(lm);
+
+    // The legal moves will be ordered so that moves giving the opponent
+    // less mobility appear first.
+
+    // Array for moves, boards, and the number of legal moves each gives
+    // Each "entry" is 2 * 8 (black and white boards) + 8 (score) = 3 bytes
+    u64 arr[numLegalMoves * 3];
+
+    // Index to keep track of place in arrays
+    u8 moveIndex = 0;
+
+    // Loop through legal moves
+    while (lm) {
+        // Extract move
+        u8 square = CLZ(lm);
+        lm ^= BIT(square);
+
+        // Make move
+        black = doMove(originalBlack, originalWhite, square);
         white = originalWhite & ~black;
 
+        // Store board, move, and number of opponent's legal moves
+        arr[3 * moveIndex] = black;
+        arr[3 * moveIndex + 1] = white;
+        arr[3 * moveIndex + 2] = ((u64) square << 56) | PC(findLegalMoves(white, black));
+
+        // Update moveIndex
+        moveIndex++;
+    }
+
+    // Sort
+    qsort(arr, numLegalMoves, 3 * sizeof(u64), ffComp);
+
+    // Main alphabeta algorithm
+    for (size_t i = 0; alpha < beta && i < numLegalMoves; i++) {
         // Recursive call and update alpha
-        int result = -endgameAlphabeta(white, black, -beta, -alpha);
+        int result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
         if (result > alpha) {
             alpha = result;
-            move = index;
+            move = arr[3 * i + 2] >> 56;
         }
     }
 
