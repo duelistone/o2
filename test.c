@@ -89,20 +89,6 @@ START_TEST(live_othello_10)
 }
 END_TEST
 
-START_TEST(findMargin_edge)
-{
-    u64 desiredResult = A2 | A5;
-    ck_assert(findMargin(A3 | A4) == desiredResult);
-}
-END_TEST
-
-START_TEST(findMargin_starting_position_black)
-{
-    u64 desiredResult = C4 | C5 | C6 | D3 | D4 | D6 | E3 | E5 | E6 | F3 | F4 | F5;
-    ck_assert(findMargin(STARTING_BOARD_BLACK) == desiredResult);
-}
-END_TEST
-
 START_TEST(live_othello_9)
 {
     // White is better, white to move
@@ -112,16 +98,6 @@ START_TEST(live_othello_9)
     white = doMove(white, black, CLZ(A6));
     black &= ~white;
     ck_assert_int_lt(eval(black, white), 0);
-}
-END_TEST
-
-START_TEST(findRegions_test)
-{
-    u64 black = B3 | B4 | B5 | B8 | C4 | C6 | C7 | C8 | D4 | D5 | D6 | D7 | D8
-              | E4 | E5 | E7 | E8 | F4 | F5 | G4 | G5;
-    u64 white = A2 | A3 | A4 | A5 | A6 | A7 | B6 | C3 | C5 | D3 | E3 | F3 | H4 | H5 | H6|E6;
-    u64 regions[15];
-    ck_assert_uint_eq(findRegions(~(black | white), regions), 3);
 }
 END_TEST
 
@@ -639,9 +615,6 @@ Suite * money_suite(void)
     ADD_TEST(live_othello_10);
     ADD_TEST(live_othello_11);
     ADD_TEST(live_othello_12);
-    ADD_TEST(findMargin_starting_position_black);
-    ADD_TEST(findMargin_edge);
-    ADD_TEST(findRegions_test);
     ADD_TEST(alphabeta_no_lm);
     ADD_TEST(legal_moves_initial_position);
     ADD_TEST(legal_moves_totalCount_62);

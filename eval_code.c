@@ -124,49 +124,10 @@
     double eeM = 1 - int_pow(1 - 0.01 * absDiff, exponent); // No explanation for this formula yet, still testing
     eeM = (diff > 0) ? eeM : -eeM;
 
-    #if 0
-    // Regional mobility
-    double eeRM = 0;
-    u64 regions[15];
-    u8 numRegions = findRegions(~(black | white), regions);
-    for (int i = 0; i < numRegions; i++) {
-        u64 region = regions[i];
-
-        // Calculate legal move number for each region
-        // Poison legal moves are treated as negative legal moves
-        // Perhaps X-squares should only be subtracted once, since a sacrifice of a 
-        // corner along an X-square is more common than a sacrifice along an edge.
-        double lmNumBlack = PC(lmBlack & region);
-        double lmNumWhite = PC(lmWhite & region);
-        int total = lmNumBlack + lmNumWhite; // Total should not be affected by poison squares
-        if (total == 0) continue;
-        lmNumBlack -= 1.5 * PC(lmBlack & region & poisonBlack);
-        lmNumWhite -= 1.5 * PC(lmWhite & region & poisonWhite);
-        lmNumBlack -= 0.75 * PC(lmBlack & region & xPoisonBlack);
-        lmNumWhite -= 0.75 * PC(lmWhite & region & xPoisonWhite);
-
-        // Calculations (no explanations for these yet, but we use an exponential)
-        double diff = lmNumBlack - lmNumWhite;
-        double absDiff = (diff > 0) ? diff : -diff;
-        double exponent = int_pow(TENTH_POWER_OF_FOUR, 35 - total);
-        double score = 1 - int_pow(1 - 0.01 * absDiff, exponent); 
-        score = (diff > 0) ? score : -score;
-        if (PC(region & CORNERS) == 1) score *= 1.5;
-        double factor = 2.1 - 0.1 * PC(region);
-        factor = (factor > 1) ? factor : 1;
-        score *= factor;
-        eeRM += score;
-    }
-    eeRM /= numRegions;
-    #else 
-    double eeRM = 0;
-    #endif
-
     // Putting it all together
     double cornerWeight = 0.51;
-    double remainingWeight = 1 - cornerWeight;
-    double frontierWeight = 0.35 * remainingWeight;
-    double mobilityWeight = 0.5 * remainingWeight;
-    double rmWeight = 0.15 * remainingWeight;
-    double ee = 1024 * (eeF * frontierWeight + eeC * cornerWeight + eeM * mobilityWeight + eeRM * rmWeight);
-    double eeSumAbs = 1024 * (fabs(eeF) * frontierWeight + fabs(eeC) * cornerWeight + fabs(eeM) * mobilityWeight + fabs(eeRM) * rmWeight);
+    double remainingWeight = (1 - cornerWeight);
+    double frontierWeight = (0.35 / 0.85) * remainingWeight;
+    double mobilityWeight = (0.5 / 0.85) * remainingWeight;
+    double ee = 1024 * (eeF * frontierWeight + eeC * cornerWeight + eeM * mobilityWeight);
+    double eeSumAbs = 1024 * (fabs(eeF) * frontierWeight + fabs(eeC) * cornerWeight + fabs(eeM) * mobilityWeight);

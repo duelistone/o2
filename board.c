@@ -653,57 +653,6 @@ double frontierScore(u64 black, u64 white, u64 poison) {
     return (result - 4 * PC(internal & ~EDGES) - 2 * PC(internal & EDGES)) / (3 * PC(taken)) + PC(fro) / 8.0;
 }
 
-// Fills up an array with regions of board
-// Returns the number of regions
-u8 findRegions(u64 empty, u64 *regions) {
-    u8 counter = 0;
-    while (empty) {
-        u64 region = BIT(CLZ(empty));
-        u64 oldRegion;
-
-        shifting_start:
-        oldRegion = region;
-        region |= SHIFT_RIGHT(region) & empty & RIGHT_FILTER;
-        if (oldRegion != region) goto shifting_start;
-        region |= SHIFT_DOWN(region) & empty & DOWN_FILTER;
-        if (oldRegion != region) goto shifting_start;
-        region |= SHIFT_DOWN_RIGHT(region) & empty & DOWN_RIGHT_FILTER;
-        if (oldRegion != region) goto shifting_start;
-        region |= SHIFT_LEFT(region) & empty & LEFT_FILTER;
-        if (oldRegion != region) goto shifting_start;
-        region |= SHIFT_DOWN_LEFT(region) & empty & DOWN_LEFT_FILTER;
-        if (oldRegion != region) goto shifting_start;
-        region |= SHIFT_UP_RIGHT(region) & empty & UP_RIGHT_FILTER;
-        if (oldRegion != region) goto shifting_start;
-        region |= SHIFT_UP_LEFT(region) & empty & UP_LEFT_FILTER;
-        if (oldRegion != region) goto shifting_start;
-        region |= SHIFT_UP(region) & empty & UP_FILTER;
-        if (oldRegion != region) goto shifting_start;
-
-        // Update regions, empty squares, and counter
-        regions[counter] = region;
-        empty ^= region;
-        counter++;
-    }
-    return counter;
-}
-
-// Find margin of a region (the empty squares around it
-// that can be an influence on the frontier)
-u64 findMargin(u64 region) {
-    u64 empty = ~region;
-    u64 margin = empty & SHIFT_LEFT(region) & LEFT_FILTER & SHIFT_LEFT(LEFT_FILTER);
-    margin |= empty & SHIFT_RIGHT(region) & RIGHT_FILTER & SHIFT_RIGHT(RIGHT_FILTER);
-    margin |= empty & SHIFT_UP(region) & UP_FILTER & SHIFT_UP(UP_FILTER);
-    margin |= empty & SHIFT_DOWN(region) & DOWN_FILTER & SHIFT_DOWN(DOWN_FILTER);
-    margin |= empty & SHIFT_UP_RIGHT(region) & UP_RIGHT_FILTER & SHIFT_UP_RIGHT(UP_RIGHT_FILTER);
-    margin |= empty & SHIFT_UP_LEFT(region) & UP_LEFT_FILTER & SHIFT_UP_LEFT(UP_LEFT_FILTER);
-    margin |= empty & SHIFT_DOWN_RIGHT(region) & DOWN_RIGHT_FILTER & SHIFT_DOWN_RIGHT(DOWN_RIGHT_FILTER);
-    margin |= empty & SHIFT_DOWN_LEFT(region) & DOWN_LEFT_FILTER & SHIFT_DOWN_LEFT(DOWN_LEFT_FILTER);
-
-    return margin;
-}
-
 // Evaluate position to int
 // Assumes the first argument is to move
 // Also assumes a wipeout has not occurred, and that there is a legal move
@@ -720,7 +669,6 @@ void printEval(u64 black, u64 white) {
     printf("frontier: %f\n", frontierWeight * eeF);
     printf("mobility: %f\n", mobilityWeight * eeM);
     printf("corners: %f\n", cornerWeight * eeC);
-    printf("regional mobility %f\n", rmWeight * eeRM);
     printf("ee %f\n", ee);
     printf("factor %f\n", 1 / (1 + eeSumAbs / 400));
     printf("Actual eval: %d\n", eval(black, white));
@@ -731,7 +679,6 @@ void printEval2(u64 black, u64 white) {
     fprintf(stderr, "frontier: %f\n", frontierWeight * eeF);
     fprintf(stderr, "mobility: %f\n", mobilityWeight * eeM);
     fprintf(stderr, "corners: %f\n", cornerWeight * eeC);
-    fprintf(stderr, "regional mobility %f\n", rmWeight * eeRM);
     fprintf(stderr, "ee %f\n", ee);
     fprintf(stderr, "factor %f\n", 1 / (1 + eeSumAbs / 400));
     fprintf(stderr, "Actual eval: %d\n", eval(black, white));
