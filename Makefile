@@ -8,7 +8,7 @@ engine: main.o board.o search.o hash.o tt.o hash.o
 	strip engine
 
 test: test.o search.o board.o hash.o tt.o
-	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o -lcheck -lm -lrt -lpthread -lsubunit
+	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o -lcheck -lm -lrt -lpthread 
 	time ./test
 	strip test
 

@@ -411,7 +411,7 @@ START_TEST(endgameAlphabeta_totalCount_62)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0) | BIT(7));
     u64 white = BIT(63);
-    ck_assert_int_gt(endgameAlphabeta62(black, white, -1, 1), 0);
+    ck_assert_int_gt(endgameAlphabeta62(black, white, findLegalMoves(black, white), -1, 1), 0);
 }
 END_TEST
 
@@ -424,11 +424,11 @@ START_TEST(ffo_endgame_40)
     u64 white = A1 | A3 | A4 | A5 | B2 | B3 | B4 | B5 | C2 | C5 | D1 | D2
               | D4 | D5 | D6 | E1 | E2 | E3 | E4 | E5 | E6 | E7 | F1 | F2
               | F3 | F4 | F5 | F6 | G1 | G2 | G3 | G6;
-    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
+    ck_assert_int_gt(ENDGAME_ALPHABETA_UPPER(black, white), 0);
 }
 END_TEST
 
-// Best time: 5.31 sec
+// Best time: 4.82 sec
 START_TEST(ffo_endgame_41)
 {
     initializeTT();
@@ -438,7 +438,7 @@ START_TEST(ffo_endgame_41)
               | D3 | D8 | D6 | D5 | E1 | E2 | E3 | E5 | F1 | F2 | F3 | F4
               | F7 | G3 | G4 | G8;
 
-    ck_assert_int_eq(endgameAlphabeta(black, white, 0, 1), 0);
+    ck_assert_int_eq(ENDGAME_ALPHABETA_UPPER(black, white), 0);
 
     #if 0
     #if COUNT_COLLISIONS
@@ -479,7 +479,7 @@ START_TEST(ffo_endgame_41)
     #endif
     #endif
     
-    ck_assert_int_eq(endgameAlphabeta(black, white, -1, 0), 0);
+    ck_assert_int_eq(ENDGAME_ALPHABETA_LOWER(black, white), 0);
 
     #if 0
     #if COUNT_COLLISIONS
@@ -522,7 +522,7 @@ START_TEST(ffo_endgame_41)
 }
 END_TEST
 
-// Best time: 1.16 sec
+// Best time: 1.08 sec
 START_TEST(ffo_endgame_42)
 {
     initializeTT();
@@ -531,11 +531,11 @@ START_TEST(ffo_endgame_42)
               | B4 | C4 | D4 | E4 | G4 | H4 | C5 | D5 | E5 | H5 | D6
               | E6 | G6 | H6 | D7 | E7 | F7 | H7 | C8 | D8 | E8 | F8;
 
-    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
+    ck_assert_int_gt(ENDGAME_ALPHABETA_UPPER(black, white), 0);
 }
 END_TEST
 
-// Best time: 6.18 sec
+// Best time: 5.80 sec
 START_TEST(ffo_endgame_45)
 {
     initializeTT();
@@ -544,11 +544,11 @@ START_TEST(ffo_endgame_45)
     u64 white = F2 | C3 | E3 | F3 | D4 | F4 | C5 | F5 | B6 | F6 | G6
               | A7 | C7 | D7 | E7 | F7 | E8 | F8; 
 
-    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
+    ck_assert_int_gt(ENDGAME_ALPHABETA_UPPER(black, white), 0);
 }
 END_TEST
 
-// Best time: 30.67 sec
+// Best time: 30.01 sec
 START_TEST(ffo_endgame_50)
 {
     initializeTT();
@@ -556,7 +556,7 @@ START_TEST(ffo_endgame_50)
     u64 white = B3 | C3 | D3 | B4 | C4 | D4 | B5 | D5 | B6 | C6 | C7 | C8
               | D7 | F8 | F7 | F6 | G6 | H6 | H5 | F5 | G4 | H4 | F4 | F3
               | G3 | H3;
-    ck_assert_int_gt(endgameAlphabeta(black, white, 0, 1), 0);
+    ck_assert_int_gt(ENDGAME_ALPHABETA_UPPER(black, white), 0);
 }
 END_TEST
 #endif
@@ -568,7 +568,7 @@ START_TEST(endgameAlphabeta_totalCount_62x7)
     u64 white = BIT(63);
     int passed = 1;
     for (int i = 0; i < 10000000; i++) {
-        passed *= (endgameAlphabeta62(black, white, -1, 1) > 0);
+        passed *= (endgameAlphabeta62(black, white, findLegalMoves(black, white), -1, 1) > 0);
     }
     ck_assert_int_eq(passed, 1);
 }

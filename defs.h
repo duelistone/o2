@@ -251,4 +251,10 @@ for (int i = 1; i <= 12; i++) {\
 // Must be greater than or equal to ENDGAME_AB_DEPTH
 #define STOP_USING_TT_DEPTH 4
 
+// Endgame alphabeta macros
+#define ENDGAME_ALPHABETA_UPPER(b, w) endgameAlphabeta(b, w, findLegalMoves(b, w), 0, 1)
+#define ENDGAME_ALPHABETA_LOWER(b, w) endgameAlphabeta(b, w, findLegalMoves(b, w), -1, 0)
+#define ENDGAME_ALPHABETA_MOVE_UPPER(b, w) endgameAlphabetaMove(b, w, findLegalMoves(b, w), 0, 1)
+#define ENDGAME_ALPHABETA_MOVE_LOWER(b, w) endgameAlphabetaMove(b, w, findLegalMoves(b, w), -1, 0)
+
 #endif

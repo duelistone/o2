@@ -6,9 +6,8 @@
 // Look at the endgame alphabeta function to see the array
 // this is working on.
 int ffComp(const void *a, const void *b) {
-    // Want to compare the (nonnegative) numbers formed by last 8 bits of last of
-    // the three u64's.
-    return (int) *((u64 *) a + 2) - (int) *((u64 *) b + 2);
+    // Want to compare the popcounts of the last of the three u64's.
+    return PC(*((u64 *) a + 2)) - PC(*((u64 *) b + 2));
 }
 
 int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
@@ -283,7 +282,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
     return (alpha * 256) | move;
 }
 
-int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
+int endgameAlphabeta(u64 black, u64 white, u64 lm, int alpha, int beta) {
     // Save initial board state
     u64 originalBlack = black;
     u64 originalWhite = white;
@@ -292,7 +291,6 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
     int factor = 1;
 
     // Deal with no legal moves possibility
-    u64 lm = findLegalMoves(black, white);
     if (lm == 0) {
         lm = findLegalMoves(white, black);
         if (lm == 0) {
@@ -373,10 +371,10 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         black = doMove(originalBlack, originalWhite, move);
         white = originalWhite & ~black;
         if (totalCount == 61) {
-            result = -endgameAlphabeta62(white, black, -beta, -alpha);
+            result = -endgameAlphabeta62(white, black, findLegalMoves(white, black), -beta, -alpha);
         }
         else {
-            result = -endgameAlphabeta(white, black, -beta, -alpha);
+            result = -endgameAlphabeta(white, black, findLegalMoves(white, black), -beta, -alpha);
         }
         alpha = (result > alpha) ? result : alpha;
 
@@ -401,7 +399,7 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         // Store board, move, and number of opponent's legal moves
         arr[3 * moveIndex] = black;
         arr[3 * moveIndex + 1] = white;
-        arr[3 * moveIndex + 2] = PC(findLegalMoves(white, black));
+        arr[3 * moveIndex + 2] = findLegalMoves(white, black);
 
         // Update moveIndex
         moveIndex++;
@@ -415,10 +413,10 @@ int endgameAlphabeta(u64 black, u64 white, int alpha, int beta) {
         // Recursive call and update alpha
         int result;
         if (totalCount == 61) {
-            result = -endgameAlphabeta62(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
+            result = -endgameAlphabeta62(arr[3 * i + 1], arr[3 * i], arr[3 * i + 2], -beta, -alpha);
         }
         else {
-            result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
+            result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], arr[3 * i + 2], -beta, -alpha);
         }
         alpha = (result > alpha) ? result : alpha;
     }
@@ -482,9 +480,8 @@ int endgameAlphabeta63(u64 black, u64 white) {
     return DD(black, white);
 }
 
-int endgameAlphabeta62(u64 black, u64 white, int alpha, int beta) {
+int endgameAlphabeta62(u64 black, u64 white, u64 lm, int alpha, int beta) {
     int factor = 1;
-    u64 lm = findLegalMoves(black, white);
     if (lm == 0) {
         lm = findLegalMoves(white, black);
         if (lm == 0) {
@@ -529,7 +526,7 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
         if (lm == 0) {
             return (DD(black, white) * 256) | NULL_MOVE;
         }
-        return (-endgameAlphabeta(white, black, -beta, -alpha) * 256) | NULL_MOVE;
+        return (-endgameAlphabeta(white, black, lm, -beta, -alpha) * 256) | NULL_MOVE;
     }
     
     // Set default move
@@ -551,7 +548,7 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
         move = EXTRACT_MOVE(abResult);
         black = doMove(originalBlack, originalWhite, move);
         white = originalWhite & ~black;
-        result = -endgameAlphabeta(white, black, -beta, -alpha);
+        result = -endgameAlphabeta(white, black, findLegalMoves(white, black), -beta, -alpha);
         alpha = (result > alpha) ? result : alpha;
 
         // Check if this move is good enough to return immediately
@@ -599,7 +596,7 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
     // Main alphabeta algorithm
     for (size_t i = 0; alpha < beta && i < numLegalMoves; i++) {
         // Recursive call and update alpha
-        int result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], -beta, -alpha);
+        int result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], findLegalMoves(arr[3 * i + 1], arr[3 * i]), -beta, -alpha);
         if (result > alpha) {
             alpha = result;
             move = arr[3 * i + 2] >> 56;
