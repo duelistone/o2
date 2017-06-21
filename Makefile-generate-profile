@@ -1,13 +1,7 @@
 CC = gcc
-CFLAGS = -Ofast -Wall -march=native -ffast-math -fprofile-use
+CFLAGS = -O3 -Wall -march=native -funsafe-math-optimizations -fprofile-generate -fprofile-use
 
 all: test engine
-
-profile:
-	make clean
-	make -f Makefile-generate-profile
-	make clean
-	make all
 
 engine: main.o board.o search.o hash.o tt.o hash.o
 	$(CC) $(CFLAGS) -o engine main.o board.o search.o hash.o tt.o -lm
@@ -37,4 +31,4 @@ main.o: main.c search.h board.h defs.h tt.h
 	$(CC) $(CFLAGS) -c main.c
 
 clean:
-	-rm *.o engine test
+	rm *.o engine test

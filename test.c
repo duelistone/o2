@@ -498,7 +498,7 @@ START_TEST(ffo_endgame_41)
 }
 END_TEST
 
-// Best time: 1.08 sec
+// Best time: 1.07 sec
 START_TEST(ffo_endgame_42)
 {
     initializeTT();
@@ -511,7 +511,7 @@ START_TEST(ffo_endgame_42)
 }
 END_TEST
 
-// Best time: 5.80 sec
+// Best time: 5.73 sec
 START_TEST(ffo_endgame_45)
 {
     initializeTT();
@@ -524,7 +524,7 @@ START_TEST(ffo_endgame_45)
 }
 END_TEST
 
-// Best time: 30.01 sec
+// Best time: 28.00 sec
 START_TEST(ffo_endgame_50)
 {
     initializeTT();
