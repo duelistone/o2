@@ -2,6 +2,7 @@
 #include <check.h>
 
 #define FFO_ENDGAME_TESTS 1
+#define TEST_FORKING 0
 
 int pv(u64 black, u64 white, int depth, u8 *moves);
 void doMoves(u64 *black, u64 *white, u8 *moves, int numMoves);
@@ -658,6 +659,11 @@ int main(void)
 
     s = money_suite();
     sr = srunner_create(s);
+
+    // For debugging
+    #if !TEST_FORKING
+    srunner_set_fork_status (sr, CK_NOFORK);
+    #endif
 
     // Set xml output
     srunner_set_xml(sr, "test_results");

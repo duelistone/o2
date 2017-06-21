@@ -1,15 +1,15 @@
 CC = gcc
-CFLAGS = -Ofast -Wall -march=native -funsafe-math-optimizations -fprofile-generate -fprofile-use
+CFLAGS = -Ofast -Wall -march=native -funsafe-math-optimizations -fprofile-generate -pg
 
 all: test engine
 
 engine: main.o board.o search.o hash.o tt.o hash.o
-	$(CC) $(CFLAGS) -o engine main.o board.o search.o hash.o tt.o -lm
+	$(CC) $(CFLAGS) -o engine main.o board.o search.o hash.o tt.o -lm -pg
 	strip engine
 
 test: test.o search.o board.o hash.o tt.o
-	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o -lcheck -lm -lrt -lpthread 
-	strip test
+	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o -lcheck -lm -lrt -lpthread -pg
+	#strip test
 	time ./test
 
 test.o: test.c search.h defs.h tt.h hash.h
