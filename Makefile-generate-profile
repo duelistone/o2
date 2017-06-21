@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -Wall -march=native -funsafe-math-optimizations -fprofile-generate -fprofile-use
+CFLAGS = -Ofast -Wall -march=native -funsafe-math-optimizations -fprofile-generate -fprofile-use
 
 all: test engine
 
