@@ -11,6 +11,7 @@ test: test.o search.o board.o hash.o tt.o
 	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o -lcheck -lm -lrt -lpthread -pg
 	#strip test
 	time ./test
+	gprof test > profile
 
 test.o: test.c search.h defs.h tt.h hash.h
 	$(CC) $(CFLAGS) -c test.c
@@ -32,3 +33,5 @@ main.o: main.c search.h board.h defs.h tt.h
 
 clean:
 	rm *.o engine test
+
+.PHONY: all clean

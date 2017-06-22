@@ -38,3 +38,5 @@ main.o: main.c search.h board.h defs.h tt.h
 
 clean:
 	-rm *.o engine test
+
+.PHONY: all profile clean

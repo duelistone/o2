@@ -138,12 +138,15 @@ u64 findLegalMoves(u64 black, u64 white) {
 
 // Makes a move for the color of
 // the first argument (called black in the function)
+// Assumes move is not in central 4 squares, which is 
+// impossible in a typical game (if you don't want this behavior, uncomment
+// the two if 0 blocks below)
 u64 doMove(u64 black, u64 white, u8 square) {
     u64 bi = BIT(square);
     u64 newblack = black;
     u64 filtered, n;
     
-    #define DMB(x, filter, shifter, shift_amount) n = bi; filtered = white & filter; n |= filtered & (n shifter shift_amount); if (n - bi) {for (size_t i = 1; i < (x); i++) n |= filtered & (n shifter shift_amount); C_OR(black & filter & (n shifter shift_amount), newblack, n);}
+    #define DMB(x, filter, shifter, shift_amount) n = bi; filtered = white & filter; n |= filtered & (n shifter shift_amount); if (n != bi) {for (size_t i = 1; i < (x); i++) n |= filtered & (n shifter shift_amount); C_OR(black & filter & (n shifter shift_amount), newblack, n);}
     #define RIGHT(x) DMB(x, RIGHT_FILTER, >>, 1)
     #define DOWN(x) DMB(x, DOWN_FILTER, >>, 8)
     #define DOWN_RIGHT(x) DMB(x, DOWN_RIGHT_FILTER, >>, 9)
@@ -342,6 +345,7 @@ u64 doMove(u64 black, u64 white, u8 square) {
             UP_LEFT(1)
             UP_RIGHT(2)
             return newblack;
+        #if 0
         case 27:
             RIGHT(3)
             DOWN(3)
@@ -362,6 +366,7 @@ u64 doMove(u64 black, u64 white, u8 square) {
             UP_LEFT(2)
             UP_RIGHT(2)
             return newblack;
+        #endif
         case 29:
             RIGHT(1)
             DOWN(3)
@@ -410,6 +415,7 @@ u64 doMove(u64 black, u64 white, u8 square) {
             DOWN_LEFT(1)
             DOWN_RIGHT(2)
             return newblack;
+        #if 0
         case 35:
             RIGHT(3)
             UP(3)
@@ -430,6 +436,7 @@ u64 doMove(u64 black, u64 white, u8 square) {
             DOWN_LEFT(2)
             DOWN_RIGHT(2)
             return newblack;
+        #endif
         case 37:
             RIGHT(1)
             UP(3)
