@@ -499,7 +499,7 @@ START_TEST(ffo_endgame_41)
 }
 END_TEST
 
-// Best time: 1.07 sec
+// Best time: 1.04 sec
 START_TEST(ffo_endgame_42)
 {
     initializeTT();
@@ -512,7 +512,7 @@ START_TEST(ffo_endgame_42)
 }
 END_TEST
 
-// Best time: 5.73 sec
+// Best time: 5.65 sec
 START_TEST(ffo_endgame_45)
 {
     initializeTT();
@@ -525,7 +525,7 @@ START_TEST(ffo_endgame_45)
 }
 END_TEST
 
-// Best time: 27.89 sec
+// Best time: 27.73 sec
 START_TEST(ffo_endgame_50)
 {
     initializeTT();
@@ -538,7 +538,7 @@ START_TEST(ffo_endgame_50)
 END_TEST
 #endif
 
-// Best time: 101 ns / call
+// Best time: 96.9 ns / call
 START_TEST(endgameAlphabeta_totalCount_62x7)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0) | BIT(7));
@@ -551,7 +551,7 @@ START_TEST(endgameAlphabeta_totalCount_62x7)
 }
 END_TEST
     
-// Best time: 20.6 ns / call
+// Best time: 18.7 ns / call
 START_TEST(endgameAlphabeta_totalCount_63x7)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0));

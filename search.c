@@ -375,12 +375,7 @@ int endgameAlphabeta(u64 black, u64 white, u64 lm, int alpha, int beta) {
         u8 move = EXTRACT_MOVE(abResult);
         black = doMove(originalBlack, originalWhite, move);
         white = originalWhite & ~black;
-        if (totalCount == 61) {
-            result = -endgameAlphabeta62(white, black, findLegalMoves(white, black), -beta, -alpha);
-        }
-        else {
-            result = -endgameAlphabeta(white, black, findLegalMoves(white, black), -beta, -alpha);
-        }
+        result = -endgameAlphabeta(white, black, findLegalMoves(white, black), -beta, -alpha);
         alpha = (result > alpha) ? result : alpha;
 
         // Check if this move is good enough to return immediately
@@ -472,14 +467,13 @@ int endgameAlphabeta63(u64 black, u64 white) {
     // Make move
     u8 square = CLZ(~(black | white));
     black = doMove(black, white, square);
-    white &= ~black;
-
+    
     // Was move legal?
-    if (black == originalBlack) {
-        // Try white
-        white = doMove(white, black, square);
-        black &= ~white;
-    }
+    if (black != originalBlack) return PC(black) - 32; // Multiply times 2 if care about disc difference
+    
+    // Try white
+    white = doMove(white, black, square);
+    black &= ~white;
 
     // Compute result
     return DD(black, white);
@@ -517,7 +511,7 @@ int endgameAlphabeta62(u64 black, u64 white, u64 lm, int alpha, int beta) {
         u64 black2 = doMove(black, white, square63);
         u64 white2 = white & ~black2;
         int secondEval = -endgameAlphabeta63(white2, black2);
-        if (secondEval > best) return factor * secondEval;
+        if (secondEval >= best) return factor * secondEval;
     }
 
     return factor * best;
