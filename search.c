@@ -10,6 +10,11 @@ int ffComp(const void *a, const void *b) {
     return PC(*((u64 *) a + 2)) - PC(*((u64 *) b + 2));
 }
 
+// Same function but only looking at last 8 bits
+int ffComp2(const void *a, const void *b) {
+    return (int) ((*((u64 *) a + 2)) & 0xFF) - (int) ((*((u64 *) b + 2)) & 0xFF);
+}
+
 int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
     // Deal with no legal moves possibility
     u64 lm = findLegalMoves(black, white);
@@ -591,7 +596,7 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
     }
 
     // Sort
-    qsort(arr, numLegalMoves, 3 * sizeof(u64), ffComp);
+    qsort(arr, numLegalMoves, 3 * sizeof(u64), ffComp2);
 
     // Main alphabeta algorithm
     for (size_t i = 0; alpha < beta && i < numLegalMoves; i++) {
