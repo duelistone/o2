@@ -1,15 +1,24 @@
 CC = gcc
-CFLAGS = -Ofast -Wall -march=native -ffast-math -fprofile-use
+CFLAGS_NO_PROFILE = -Ofast -Wall -march=native -ffast-math
+CFLAGS = $(CFLAGS_NO_PROFILE) -fprofile-use
 
-all: test engine
+all: profile
 
 profile:
 	make clean
 	make -f Makefile-generate-profile
 	make clean
-	make all
+	make test
+	make engine
 
-engine: main.o board.o search.o hash.o tt.o hash.o
+# Requires make clean first if previously using profile
+simple: main.o board.o search.o hash.o tt.o test.o
+	$(CC) $(CFLAGS_NO_PROFILE) -o engine main.o board.o search.o hash.o tt.o -lm
+	$(CC) $(CFLAGS_NO_PROFILE) -o test test.o search.o board.o hash.o tt.o -lcheck -lm -lrt -lpthread 
+	strip engine
+	strip test
+
+engine: main.o board.o search.o hash.o tt.o
 	$(CC) $(CFLAGS) -o engine main.o board.o search.o hash.o tt.o -lm
 	strip engine
 
@@ -39,4 +48,4 @@ main.o: main.c search.h board.h defs.h tt.h
 clean:
 	-rm *.o engine test
 
-.PHONY: all profile clean
+.PHONY: all profile clean simple
