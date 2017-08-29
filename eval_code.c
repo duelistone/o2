@@ -119,15 +119,13 @@
     int lmNumBlack = PC(lmBlack);
     int lmNumWhite = PC(lmWhite);
     int diff = lmNumBlack - lmNumWhite - 1; // The -1 is a penalty for having to move
-    int absDiff = (diff > 0) ? diff : -diff;
-    double exponent = int_pow(TENTH_POWER_OF_FOUR, 35 - lmNumBlack - lmNumWhite);
-    double eeM = 1 - int_pow(1 - 0.01 * absDiff, exponent); // No explanation for this formula yet, still testing
+    double eeM = 4 * mobilityConstant[35 * lmNumBlack + lmNumWhite];
     eeM = (diff > 0) ? eeM : -eeM;
 
     // Putting it all together
     double cornerWeight = 0.51;
     double remainingWeight = (1 - cornerWeight);
-    double frontierWeight = (0.35 / 0.85) * remainingWeight;
-    double mobilityWeight = (0.5 / 0.85) * remainingWeight;
+    double frontierWeight = (0.3 / 0.85) * remainingWeight;
+    double mobilityWeight = (0.55 / 0.85) * remainingWeight;
     double ee = 1024 * (eeF * frontierWeight + eeC * cornerWeight + eeM * mobilityWeight);
     double eeSumAbs = 1024 * (fabs(eeF) * frontierWeight + fabs(eeC) * cornerWeight + fabs(eeM) * mobilityWeight);
