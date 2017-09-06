@@ -257,4 +257,7 @@ for (int i = 1; i <= 12; i++) {\
 #define ENDGAME_ALPHABETA_MOVE_UPPER(b, w) endgameAlphabetaMove(b, w, findLegalMoves(b, w), 0, 1)
 #define ENDGAME_ALPHABETA_MOVE_LOWER(b, w) endgameAlphabetaMove(b, w, findLegalMoves(b, w), -1, 0)
 
+// Eval macro
+#define EVAL(b, w) (eval(b, w, findLegalMoves(b, w)))
+
 #endif

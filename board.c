@@ -650,17 +650,34 @@ u64 frontier(u64 black, u64 white) {
 
 double frontierScore(u64 black, u64 white, u64 poison) {
     u64 taken = black | white;
-    u64 empty = ~taken;
+    u64 empty = ~(black | white);
+    u64 nonedgeBlack = ~EDGES & black;
+    u64 nonLR = (RIGHT_FILTER & LEFT_FILTER) & black;
+    u64 nonUD = (UP_FILTER & DOWN_FILTER) & black;
+
+    // Normal frontier
+    u64 frontierBlack = SHIFT_RIGHT(empty) & nonLR;
+    frontierBlack |= SHIFT_LEFT(empty) & nonLR;
+    frontierBlack |= SHIFT_UP(empty) & nonUD;
+    frontierBlack |= SHIFT_DOWN(empty) & nonUD;
+    frontierBlack |= SHIFT_UP_RIGHT(empty) & nonedgeBlack;
+    frontierBlack |= SHIFT_UP_LEFT(empty) & nonedgeBlack;
+    frontierBlack |= SHIFT_DOWN_RIGHT(empty) & nonedgeBlack;
+    frontierBlack |= SHIFT_DOWN_LEFT(empty) & nonedgeBlack;
+
+    // Exclude poison squares for weighted frontier
+    empty &= ~poison;
+
     // Calculate weighted frontier
-    int result = PC(SHIFT_RIGHT(empty & ~poison) & (RIGHT_FILTER & LEFT_FILTER) & black);
-    result += PC(SHIFT_LEFT(empty & ~poison) & (LEFT_FILTER & RIGHT_FILTER) & black);
-    result += PC(SHIFT_UP(empty & ~poison) & (UP_FILTER & DOWN_FILTER) & black);
-    result += PC(SHIFT_DOWN(empty & ~poison) & (DOWN_FILTER & UP_FILTER) & black);
-    result += PC(SHIFT_UP_RIGHT(empty & ~poison) & ~EDGES & black);
-    result += PC(SHIFT_UP_LEFT(empty & ~poison) & ~EDGES & black);
-    result += PC(SHIFT_DOWN_RIGHT(empty & ~poison) & ~EDGES & black);
-    result += PC(SHIFT_DOWN_LEFT(empty & ~poison) & ~EDGES & black);
-    u64 fro = frontier(black, white);
+    int result = PC(SHIFT_RIGHT(empty) & nonLR);
+    result += PC(SHIFT_LEFT(empty) & nonLR);
+    result += PC(SHIFT_UP(empty) & nonUD);
+    result += PC(SHIFT_DOWN(empty) & nonUD);
+    result += PC(SHIFT_UP_RIGHT(empty) & nonedgeBlack);
+    result += PC(SHIFT_UP_LEFT(empty) & nonedgeBlack);
+    result += PC(SHIFT_DOWN_RIGHT(empty) & nonedgeBlack);
+    result += PC(SHIFT_DOWN_LEFT(empty) & nonedgeBlack);
+    u64 fro = frontierBlack;
     u64 internal = black & ~fro;
     return (result - 4 * PC(internal & ~EDGES) - 2 * PC(internal & EDGES)) / (3 * PC(taken)) + PC(fro) / 8.0;
 }
@@ -668,7 +685,7 @@ double frontierScore(u64 black, u64 white, u64 poison) {
 // Evaluate position to int
 // Assumes the first argument is to move
 // Also assumes a wipeout has not occurred, and that there is a legal move
-int eval(u64 black, u64 white) {
+int eval(u64 black, u64 white, u64 lmBlack) {
     // To avoid worrying about keeping this code the same three times in this function 
     // and the next two, it will be included in (in an admittedly odd usage of #include).
     #include "eval_code.c"
@@ -677,23 +694,25 @@ int eval(u64 black, u64 white) {
 
 // Print eval information for debugging
 void printEval(u64 black, u64 white) {
+    u64 lmBlack = findLegalMoves(black, white);
     #include "eval_code.c"
     printf("frontier: %f\n", frontierWeight * eeF);
     printf("mobility: %f\n", mobilityWeight * eeM);
     printf("corners: %f\n", cornerWeight * eeC);
     printf("ee %f\n", ee);
     printf("factor %f\n", 1 / (1 + eeSumAbs / 400));
-    printf("Actual eval: %d\n", eval(black, white));
+    printf("Actual eval: %d\n", EVAL(black, white));
 }
 
 void printEval2(u64 black, u64 white) {
+    u64 lmBlack = findLegalMoves(black, white);
     #include "eval_code.c"
     fprintf(stderr, "frontier: %f\n", frontierWeight * eeF);
     fprintf(stderr, "mobility: %f\n", mobilityWeight * eeM);
     fprintf(stderr, "corners: %f\n", cornerWeight * eeC);
     fprintf(stderr, "ee %f\n", ee);
     fprintf(stderr, "factor %f\n", 1 / (1 + eeSumAbs / 400));
-    fprintf(stderr, "Actual eval: %d\n", eval(black, white));
+    fprintf(stderr, "Actual eval: %d\n", EVAL(black, white));
 }
 
 // Print board

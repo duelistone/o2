@@ -58,7 +58,7 @@ START_TEST(live_othello_12)
               | E5 | F3 | F5 | F6 | G5 | G7 | H5;
     u64 white = A2 | A3 | A4 | A5 | B1 | B3 | B4 | B8 | C1 | C2 | C8 | D1 | D6 | D7 | D8 | E6
               | F7 | G8;
-    ck_assert_int_gt(eval(white, black), 0);
+    ck_assert_int_gt(EVAL(white, black), 0);
 }
 END_TEST
 
@@ -85,7 +85,7 @@ START_TEST(live_othello_10)
     u64 black = C1 | C2 | B8 | C8 | D8 | D1 | D2 | D3 | E1 | E2 | E3 | E4 | F1 | F2 | F3 | F5
               | G1 | G3 | G4 | G6 | H2 | H3 | H4 | H5 | H6;
     u64 white = A1 | B2 | C3 | D4 | F4 | C5 | D5 | E5 | G5 | D6 | E6 | F6 | D7 | E7 | F7 | F8;
-    int e = eval(black, white);
+    int e = EVAL(black, white);
     ck_assert_int_gt(e, -100);
 }
 END_TEST
@@ -95,10 +95,10 @@ START_TEST(live_othello_9)
     // White is better, white to move
     u64 black = A2 | A3 | A4 | B3 | B5 | C2 | C4 | C6 | D5 | E4 | E5 | F4 | F5;
     u64 white = B4 | C3 | C5 | D3 | D4 | D6 | D7 | E3 | E6 | F6;
-    ck_assert_int_gt(eval(white, black), 0);
+    ck_assert_int_gt(EVAL(white, black), 0);
     white = doMove(white, black, CLZ(A6));
     black &= ~white;
-    ck_assert_int_lt(eval(black, white), 0);
+    ck_assert_int_lt(EVAL(black, white), 0);
 }
 END_TEST
 
@@ -108,7 +108,7 @@ START_TEST(live_othello_8)
     u64 black = B3 | B4 | B5 | B8 | C4 | C6 | C7 | C8 | D4 | D5 | D6 | D7 | D8
               | E4 | E5 | E6 | E7 | E8 | F4 | F5 | G4 | G5;
     u64 white = A2 | A3 | A4 | A5 | A6 | A7 | B6 | C3 | C5 | D3 | E3 | F3 | H4 | H5 | H6;
-    ck_assert_int_lt(eval(black, white), 0);
+    ck_assert_int_lt(EVAL(black, white), 0);
 }
 END_TEST
 
@@ -118,7 +118,7 @@ START_TEST(eval_timing_x6)
               | E4 | E5 | E6 | E7 | E8 | F4 | F5 | G4 | G5;
     u64 white = A2 | A3 | A4 | A5 | A6 | A7 | B6 | C3 | C5 | D3 | E3 | F3 | H4 | H5 | H6;
     int result;
-    for (int i = 0; i < 1000000; i++) result = eval(black, white);
+    for (int i = 0; i < 1000000; i++) result = EVAL(black, white);
     ck_assert_int_gt(result, MIN_EVAL); // Dummy test
 }
 END_TEST
@@ -164,7 +164,7 @@ START_TEST(live_othello_5)
     // u64 black = A1 | A2 | A3 | A4 | A5 | A6 | B4 | B5 | B6 | C5 | C6 | D1 | D2 | D3
     //           | D4 | D6 | D7 | D8 | E3 | E4 | E5 | E7 | E8 | F3 | F4 | F6 | F7 | F8 | G4 | H4;
     // u64 white = B3 | C1 | C2 | C3 | C4 | D5 | E6 | F5;
-    // ck_assert_int_lt(eval(white, black), 0);
+    // ck_assert_int_lt(EVAL(white, black), 0);
     // ck_assert_int_lt(alphabeta(white, black, 4, -1, 0), 0);
 }
 END_TEST
@@ -175,7 +175,7 @@ START_TEST(live_othello_4)
     u64 black = A2 | A3 | A4 | A5 | A6 | B3 | C2 | C3 | C4 | C5 | D3 | D4 | D5 | D6
               | E3 | E4 | E5 | F2 | F5 | A7 | B6 | B7 | A8 | C6;
     u64 white = B4 | B5 | C7 | C8 | D6 | E6;
-    ck_assert_int_lt(eval(white, black), 0);
+    ck_assert_int_lt(EVAL(white, black), 0);
 }
 END_TEST
 
@@ -185,7 +185,7 @@ START_TEST(live_othello_3)
     u64 black = A2 | A3 | A4 | A5 | A6 | B3 | B5 | B6 | C2 | C3 | C4 | C5 | C6 | D3 | D4 
               | D5 | D6 | E3 | E4 | E5 | E6 | F2 | F5 | F6 | F7 | G6;
     u64 white = B4 | C7 | C8;
-    ck_assert_int_gt(eval(white, black), 0);
+    ck_assert_int_gt(EVAL(white, black), 0);
 }
 END_TEST
 
@@ -195,7 +195,7 @@ START_TEST(live_othello_2)
     // black to move, black advantage, +12
     u64 black = D5 | E4 | E5 | E6 | G4 | G5 | G6;
     u64 white = C3 | C4 | C5 | D2 | D3 | D4 | E3 | F2 | F3 | F4 | F5 | F6 | F7;
-    ck_assert_int_gt(eval(black, white), 0);
+    ck_assert_int_gt(EVAL(black, white), 0);
     //ck_assert_int_gt(alphabeta(black, white, 4, -1, 1), 0);
 }
 END_TEST
@@ -206,7 +206,7 @@ START_TEST(live_othello_1)
     // -4 (white advantage, white to move)
     u64 black = C5 | C6 | D6 | E6 | E7 | F8 | F6 | F5 | G5 | G6 | H5;
     u64 white = E3 | C4 | D4 | E4 | F4 | D5 | E5 | D7 | D8 | E8;
-    ck_assert_int_gt(eval(white, black), 0);
+    ck_assert_int_gt(EVAL(white, black), 0);
     // ck_assert_int_gt(alphabeta(white, black, 4, -1, 1), 0); // TODO: Currently fails
 }
 END_TEST
@@ -255,7 +255,7 @@ START_TEST(betterPlayer_1)
 {
     u64 black = D3 | C4 | D4 | E4 | D5 | D6;
     u64 white = C3 | A5 | B5 | C5 | E5;
-    ck_assert_int_lt(eval(white, black), 0);
+    ck_assert_int_lt(EVAL(white, black), 0);
     ck_assert_int_lt(alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
@@ -264,7 +264,7 @@ START_TEST(betterPlayer_2)
 {
     u64 black = E2 | D3 | B5 | C5 | D5 | C6;
     u64 white = A3 | C3 | E3 | A4 | B4 | C4 | D4 | E4 | A5 | E5;
-    ck_assert_int_lt(eval(black, white), 0);
+    ck_assert_int_lt(EVAL(black, white), 0);
     ck_assert_int_lt(alphabeta(black, white, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
@@ -273,7 +273,7 @@ START_TEST(betterPlayer_3)
 {
     u64 black = F2 | E3 | B4 | C4 | D4 | C5 | D5 | C5;
     u64 white = E1 | F1 | G1 | E2 | A3 | C3 | D3 | A4 | E4 | A5 | B5 | E5 | A6;
-    ck_assert_int_lt(eval(white, black), 0);
+    ck_assert_int_lt(EVAL(white, black), 0);
     ck_assert_int_lt(alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
@@ -292,9 +292,9 @@ START_TEST(alphabeta_2nd_move)
     u64 whitePara = doMove(white, black, CLZ(D6));
     u64 blackPara = black &~ whitePara;
 
-    ck_assert_int_le(result1, eval(blackPara, whitePara));
-    ck_assert_int_le(result1, eval(blackDiag, whiteDiag));
-    ck_assert_int_le(result1, eval(blackPerp, whitePerp));
+    ck_assert_int_le(result1, EVAL(blackPara, whitePara));
+    ck_assert_int_le(result1, EVAL(blackDiag, whiteDiag));
+    ck_assert_int_le(result1, EVAL(blackPerp, whitePerp));
 }
 END_TEST
 
@@ -312,7 +312,7 @@ START_TEST(bad_midgame_position_1)
     u64 black = C1 | D1 | E1 | F1 | G1 | F2 | H2 | E3 | G3 | H3 | E4 | F4 | E5;
     u64 white = C2 | D2 | E2 | D3 | F3 | D4 | G4 | C5 | D5 | F5 | G5 | H5 | C6
               | D6 | E6 | F6 | E7 | F7;
-    ck_assert_int_gt(-eval(white, black), 0);
+    ck_assert_int_gt(-EVAL(white, black), 0);
     ck_assert_int_gt(-alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
@@ -321,7 +321,7 @@ START_TEST(bad_opening_position_1)
 {
     u64 black = C4 | B5 | C5 | D5 | C6 | D6;
     u64 white = B6 | C3 | D3 | E3 | D4 | E4 | E5;
-    ck_assert_int_gt(-eval(white, black), 0);
+    ck_assert_int_gt(-EVAL(white, black), 0);
     ck_assert_int_gt(-alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
@@ -331,7 +331,7 @@ START_TEST(bad_midgame_position_low_mobility)
     // This is about -20 for WZebra
     u64 black = C4 | D5 | D6 | D7 | E6;
     u64 white = C3 | D3 | E3 | D4 | E4 | E5 | A5 | B5 | C5 | B6 | C6 | C7;
-    ck_assert_int_gt(-eval(white, black), 0);
+    ck_assert_int_gt(-EVAL(white, black), 0);
     ck_assert_int_gt(-alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
@@ -347,7 +347,7 @@ START_TEST(bad_late_midgame_position_1)
               | E5 | F3;
     printBoard(black, white);
     printEval(black, white);
-    ck_assert_int_gt(-eval(white, black), 0);
+    ck_assert_int_gt(-EVAL(white, black), 0);
     ck_assert_int_gt(-alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
@@ -512,7 +512,7 @@ START_TEST(ffo_endgame_42)
 }
 END_TEST
 
-// Best time: 5.65 sec
+// Best time: 5.55 sec
 START_TEST(ffo_endgame_45)
 {
     initializeTT();
@@ -525,7 +525,7 @@ START_TEST(ffo_endgame_45)
 }
 END_TEST
 
-// Best time: 27.73 sec
+// Best time: 25.70 sec
 START_TEST(ffo_endgame_50)
 {
     initializeTT();

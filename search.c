@@ -32,7 +32,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Return static evaluation at depth 0 or less (yes, less is possible due to lm == 0 case)
     if (depth <= 0) {
-        return eval(black, white);
+        return eval(black, white, lm);
     }
     else if (depth == 1) {
         // Main alphabeta algorithm
@@ -44,7 +44,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
             white = originalWhite & ~black;
 
             // Get eval
-            int result = -eval(white, black);
+            int result = -eval(white, black, findLegalMoves(white, black));
             alpha = (result > alpha) ? result : alpha;
         }
         return alpha;
@@ -230,7 +230,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
 
     // Return static evaluation at depth 0 or less (yes, less is possible due to lm == 0 case)
     if (depth <= 0) {
-        return (eval(black, white) * 256) | NULL_MOVE; // No move should be given for depth 0 search
+        return (eval(black, white, lm) * 256) | NULL_MOVE; // No move should be given for depth 0 search
     }
     
     // Save initial board state
