@@ -6,11 +6,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define AB_DEPTH 14
+#define AB_DEPTH 12
 
 int main(int argc, char **argv) {
     // Initialize transposition table
     initializeTT();
+    initializeNN();
 
     // Setup board and move pointers
     u64 black, white;

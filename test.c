@@ -1,5 +1,7 @@
 #include "search.h"
+#include <stdlib.h>
 #include <check.h>
+#include "eval_error.h"
 
 #define FFO_ENDGAME_TESTS 1
 #define TEST_FORKING 0
@@ -40,8 +42,8 @@ START_TEST(endgameAlphabetaMove_bug_1)
     // u64 white = D1 | E1 | D2 | E2 | E3 | D4 | F4 | C5 | C6 | D5 | D6 | E5 | E6 | F6 | C7 | C8 | E7
     //           | F7 | F8 | C2 | D3 | E4 | F5;
     // printBoard(black, white);
-    // ck_assert_int_eq(endgameAlphabeta(black, white, -1, 0), 0);
-    // ck_assert_int_eq(endgameAlphabeta(black, white, 0, 1), 0);
+    // ck_assert_int_eq(endgameAlphabeta(black, white, 0), 0);
+    // ck_assert_int_eq(endgameAlphabeta(black, white, 1), 0);
     
     // u64 black = A1 | A2 | A3 | A4 | A5 | A6 | B2 | B3 | B6 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8
     //           | D4 | D6 | E3 | E5 | F4 | F5 | F6 | F7 | F8;
@@ -68,7 +70,6 @@ START_TEST(live_othello_11)
     // Black to move, white advantage, -8
     u64 black = D8 | E4 | E7 | F3 | F6 | F7 | G5 | G6 | H2 | H3 | H4 | H5;
     u64 white = C5 | D2 | E3 | D4 | D5 | D6 | E5 | E6 | F4 | F5 | G3 | G4;
-    PBE(black, white);
     // Following principal variation
     u8 moves[60];
     pv(black, white, 10, moves);
@@ -260,6 +261,7 @@ START_TEST(betterPlayer_1)
 }
 END_TEST
 
+#if 0
 START_TEST(betterPlayer_2)
 {
     u64 black = E2 | D3 | B5 | C5 | D5 | C6;
@@ -268,6 +270,7 @@ START_TEST(betterPlayer_2)
     ck_assert_int_lt(alphabeta(black, white, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
+#endif
 
 START_TEST(betterPlayer_3)
 {
@@ -298,6 +301,7 @@ START_TEST(alphabeta_2nd_move)
 }
 END_TEST
 
+#if 0
 START_TEST(frontierScore_early_position)
 {
     u64 black = D3 | C4 | E4 | F4 | C5 | E6;
@@ -306,6 +310,7 @@ START_TEST(frontierScore_early_position)
     ck_assert(frontierScore(white, black, 0) == 12 / (3 * 11) + (5) / 8.0);
 }
 END_TEST
+#endif
 
 START_TEST(bad_midgame_position_1)
 {
@@ -357,30 +362,7 @@ START_TEST(endgameAlphabeta_totalCount_63)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0));
     u64 white = BIT(63);
-    ck_assert_int_gt(endgameAlphabeta63(black, white), 0);
-}
-END_TEST
-
-
-START_TEST(endgameAlphabetaMove_totalCount_63)
-{
-    initializeTT();
-    u64 black = -1ull & ~(BIT(63) | BIT(0));
-    u64 white = BIT(63);
-    int result = endgameAlphabetaMove(white, black, -1, 1);
-    ck_assert((result & ~0xFF) / 256 < 0);
-    ck_assert(0 == (result & 0xFF));
-}
-END_TEST
-
-START_TEST(endgameAlphabetaMove_totalCount_63_no_legal_moves)
-{
-    initializeTT();
-    u64 black = -1ull & ~(BIT(63) | BIT(0));
-    u64 white = BIT(63);
-    int result = endgameAlphabetaMove(black, white, -1, 1);
-    ck_assert(EXTRACT_EVAL(result) > 0);
-    ck_assert(NULL_MOVE == EXTRACT_MOVE(result));
+    ck_assert_int_gt(endgameAlphabeta63(black, white, 1), 0);
 }
 END_TEST
 
@@ -388,7 +370,7 @@ START_TEST(endgameAlphabeta_totalCount_62)
 {
     u64 black = -1ull & ~(BIT(63) | BIT(0) | BIT(7));
     u64 white = BIT(63);
-    ck_assert_int_gt(endgameAlphabeta62(black, white, findLegalMoves(black, white), -1, 1), 0);
+    ck_assert_int_gt(endgameAlphabeta62(black, white, findLegalMoves(black, white), 1), 0);
 }
 END_TEST
 
@@ -405,7 +387,7 @@ START_TEST(ffo_endgame_40)
 }
 END_TEST
 
-// Best time: 4.82 sec
+// Best time: 3.4 sec
 START_TEST(ffo_endgame_41)
 {
     initializeTT();
@@ -512,7 +494,27 @@ START_TEST(ffo_endgame_42)
 }
 END_TEST
 
-// Best time: 5.55 sec
+START_TEST(ffo_endgame_43)
+{
+    initializeTT();
+    u64 black = E2 | F2 |F3 | F4 | F5 | F6 |G5 | G7 |A5;
+    u64 white = C1 | D1 | E1 | H2 | A3 | B3 | C3 | D3 | E3 | G3 | H3
+              | B4 | C4 | D4 | E4 | G4 | H4 | C5 | D5 | E5 | H5 | D6 
+              | E6 | G6 | H6 | D7 | E7 | F7 | H7 | C8 | D8 | E8 | F8;
+    ck_assert_int_gt(ENDGAME_ALPHABETA_UPPER(black, white), 0);
+}
+END_TEST
+
+START_TEST(ffo_endgame_44)
+{
+    initializeTT();
+    u64 black = E1 | E2 | D3 | E3 | F3 | E4 | F4 | G4 | E5 | F5 | E6 | A6 | B6 | C7 | D7 | E7 | F7 | D8 | E8 | F8;
+    u64 white = C1 | G1 | C2 | F2 | H2 | B3 | C3 | G3 | H3 | A4 | B4 | C4 | D4 | H4 | A5 | B5 | C5 | D5 | C6 | D6 | F6;
+    ck_assert_int_lt(ENDGAME_ALPHABETA_LOWER(white, black), 0);
+}
+END_TEST
+
+// Best time: 4.56 sec
 START_TEST(ffo_endgame_45)
 {
     initializeTT();
@@ -525,7 +527,29 @@ START_TEST(ffo_endgame_45)
 }
 END_TEST
 
-// Best time: 25.70 sec
+START_TEST(ffo_endgame_46)
+{
+    initializeTT();
+    u64 black = D1 | E1 | F1 | F2 | F3 | G3 | F4 | G4 | H4 | G5 | H5 | F6 | G6 | H6
+              | D6 | C7 | D7 | B8 | C8 | D8 | E8;;
+    u64 white = C2 | D2 | E2 | C3 | D3 | E3 | B4 | C4 | D4 | E4 | C5 | D5 | E5 | F5
+              | C6 | E6 | E7 | F7 | G8;
+
+    ck_assert_int_lt(ENDGAME_ALPHABETA_LOWER(black, white), 0);
+}
+END_TEST
+
+START_TEST(ffo_endgame_47)
+{
+    initializeTT();
+    u64 black = A4 | B4 | C4 | D4 | E4 | F4 | F3 | C5 | F5 | D6 | F6 | E7 | F7 | C8 | D8 | E8 | F8;
+    u64 white = B1 | C1 | D1 | E1 | F1 | C2 | D2 | E2 | F2 | B3 | C3 | D3 | E3 | B5 | D5 | E5 | A6
+              | B6 | C6 | E6 | C7 | D7;
+    ck_assert_int_gt(ENDGAME_ALPHABETA_UPPER(white, black), 0);
+}
+END_TEST
+
+// Best time: 17.00 sec
 START_TEST(ffo_endgame_50)
 {
     initializeTT();
@@ -545,7 +569,7 @@ START_TEST(endgameAlphabeta_totalCount_62x7)
     u64 white = BIT(63);
     int passed = 1;
     for (int i = 0; i < 10000000; i++) {
-        passed *= (endgameAlphabeta62(black, white, findLegalMoves(black, white), -1, 1) > 0);
+        passed *= (endgameAlphabeta62(black, white, findLegalMoves(black, white), 1) > 0);
     }
     ck_assert_int_eq(passed, 1);
 }
@@ -558,7 +582,7 @@ START_TEST(endgameAlphabeta_totalCount_63x7)
     u64 white = BIT(63);
     int passed = 1;
     for (int i = 0; i < 10000000; i++) {
-        passed *= (endgameAlphabeta63(black, white) > 0);
+        passed *= (endgameAlphabeta63(black, white, 1) > 0);
     }
     ck_assert_int_eq(passed, 1);
 }
@@ -589,7 +613,7 @@ void doMoves(u64 *black, u64 *white, u8 *moves, int numMoves) {
     }
 }
 
-Suite * money_suite(void)
+Suite * othello_suite(void)
 {
     Suite *s;
     TCase *tc_core;
@@ -613,7 +637,7 @@ Suite * money_suite(void)
     ADD_TEST(live_othello_7);
     ADD_TEST(live_othello_8);
     ADD_TEST(live_othello_9);
-    ADD_TEST(live_othello_10);
+    //ADD_TEST(live_othello_10);
     ADD_TEST(live_othello_11);
     ADD_TEST(live_othello_12);
     ADD_TEST(alphabeta_no_lm);
@@ -621,9 +645,9 @@ Suite * money_suite(void)
     ADD_TEST(legal_moves_totalCount_62);
     ADD_TEST(doMove_initial_position);
     ADD_TEST(doMove_no_legal_moves);
-    ADD_TEST(frontierScore_early_position);
+    //ADD_TEST(frontierScore_early_position);
     ADD_TEST(betterPlayer_1);
-    ADD_TEST(betterPlayer_2);
+    //ADD_TEST(betterPlayer_2);
     ADD_TEST(betterPlayer_3);
     ADD_TEST(alphabeta_2nd_move);
     ADD_TEST(bad_opening_position_1);
@@ -631,14 +655,16 @@ Suite * money_suite(void)
     ADD_TEST(bad_midgame_position_1);
     ADD_TEST(endgameAlphabeta_totalCount_63);
     ADD_TEST(endgameAlphabetaMove_bug_1);
-    ADD_TEST(endgameAlphabetaMove_totalCount_63);
-    ADD_TEST(endgameAlphabetaMove_totalCount_63_no_legal_moves);
     ADD_TEST(endgameAlphabeta_totalCount_62);
     #if FFO_ENDGAME_TESTS
     ADD_TEST(ffo_endgame_40);
     ADD_TEST(ffo_endgame_41);
     ADD_TEST(ffo_endgame_42);
+    ADD_TEST(ffo_endgame_43);
+    //ADD_TEST(ffo_endgame_44);
     ADD_TEST(ffo_endgame_45);
+    //ADD_TEST(ffo_endgame_46);
+    //ADD_TEST(ffo_endgame_47);
     ADD_TEST(ffo_endgame_50);
     #endif
     ADD_TEST(endgameAlphabeta_totalCount_62x7);
@@ -651,13 +677,17 @@ Suite * money_suite(void)
 }
 
 // From check framework tutorial (hence the "money" references)
-int main(void)
-{
+int main(void) {
+    // Random seed
+    srand(38980);
+
+    initializeNN();
+
     int number_failed;
     Suite *s;
     SRunner *sr;
 
-    s = money_suite();
+    s = othello_suite(); // Freed by srunner_free as well according to docs
     sr = srunner_create(s);
 
     // For debugging
@@ -672,5 +702,6 @@ int main(void)
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);
     srunner_free(sr);
+
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

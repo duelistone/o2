@@ -30,6 +30,9 @@
 #define MU8(x) ((u8 *) malloc(sizeof(u8) * (x)))
 #define CU8(x) ((u8 *) calloc((x), sizeof(u8)))
 
+// Swap function
+#define SWAP(a, b) ({typeof(a) temp = a; a = b; b = temp;})
+
 // Popcount
 #define PC(x) (__builtin_popcountll(x))
 
@@ -191,15 +194,10 @@
 #define TENTH_POWER_OF_FOUR 1.148698
 
 // Possible endgame evals as scored in transposition table
-#define DRAW 0
 #define BLACK_WIN 1
 #define WHITE_WIN 2
 #define NOT_BLACK_WIN 3  // For when alpha = 0, beta = 1, and the eval given is 0.
 #define NOT_WHITE_WIN 4  // For when alpha = -1, beta = 0, and the eval given is 0.
-
-// Extracting eval and number of nodes from endgame transposition table
-#define EXTRACT_ENDGAME_TT_EVAL(data) (data & 0x7ull)
-#define EXTRACT_ENDGAME_TT_NUM_NODES(data) (data >> 61)
 
 // Endgame transposition table size in bytes
 #define HASH_LEN 24 // In bits
@@ -212,8 +210,11 @@
 // When to stop using midgame evaluation function in endgame search
 #define STOP_USING_EVAL 52
 
+// When to stop sorting variations in endgame search
+#define STOP_SORTING_TC 59
+
 // Depth of midgame searches used in endgame
-#define ENDGAME_AB_DEPTH 1
+#define ENDGAME_AB_DEPTH 4
 
 // Determine whether the number of transposition table collisions should be counted
 #define COUNT_COLLISIONS 0
@@ -234,6 +235,16 @@ for (int i = 1; i <= 12; i++) {\
     fprintf(stderr, "Depth %d: eval %d, move %u\n", i, ee, move);\
 }
 
+// For neural network
+#define BOARD_TO_INPUT_LIST(black, white, inputList) {\
+    u64 empty = ~((black) | (white));\
+    for (int i = 0; i < 64; i++) {\
+        *((inputList) + 3 * i) = (black) & BIT(i);\
+        *((inputList) + 3 * i + 1) = (white) & BIT(i);\
+        *((inputList) + 3 * i + 2) = (empty) & BIT(i);\
+    }\
+}
+
 // When to start considering a move as so bad it's clearly losing
 #define LOSING_EVAL -150
 
@@ -252,8 +263,8 @@ for (int i = 1; i <= 12; i++) {\
 #define STOP_USING_TT_DEPTH 4
 
 // Endgame alphabeta macros
-#define ENDGAME_ALPHABETA_UPPER(b, w) endgameAlphabeta(b, w, findLegalMoves(b, w), 0, 1)
-#define ENDGAME_ALPHABETA_LOWER(b, w) endgameAlphabeta(b, w, findLegalMoves(b, w), -1, 0)
+#define ENDGAME_ALPHABETA_UPPER(b, w) endgameAlphabeta(b, w, findLegalMoves(b, w), 1)
+#define ENDGAME_ALPHABETA_LOWER(b, w) endgameAlphabeta(b, w, findLegalMoves(b, w), 0)
 #define ENDGAME_ALPHABETA_MOVE_UPPER(b, w) endgameAlphabetaMove(b, w, findLegalMoves(b, w), 0, 1)
 #define ENDGAME_ALPHABETA_MOVE_LOWER(b, w) endgameAlphabetaMove(b, w, findLegalMoves(b, w), -1, 0)
 
