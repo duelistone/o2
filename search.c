@@ -84,6 +84,12 @@ int ffComp2(const void *a, const void *b) {
     return (int) ((*((u64 *) a + 2)) & 0xFF) - (int) ((*((u64 *) b + 2)) & 0xFF);
 }
 
+// Same function as ffComp2 only looking at more bits
+int ffComp3(const void *a, const void *b) {
+    // This trusts that the u64's have values smaller than INT_MAX
+    return (int) (*((u64 *) a + 2)) - (int) (*((u64 *) b + 2));
+}
+
 int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
     // Deal with no legal moves possibility
     u64 lm = findLegalMoves(black, white);
@@ -109,8 +115,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
             // Extract next legal move and make the move
             int index = CLZ(lm);
             lm ^= BIT(index);
-            black = doMove(originalBlack, originalWhite, index);
-            white = originalWhite & ~black;
+            DO_MOVE(originalBlack, originalWhite, index, black, white);
 
             // Get eval
             int result = -eval(white, black, findLegalMoves(white, black));
@@ -170,8 +175,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
 
         // Try first move
         lm ^= BIT(firstMove);
-        black = doMove(originalBlack, originalWhite, firstMove);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, firstMove, black, white);
 
         // Recursive call and update alpha
         int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
@@ -182,8 +186,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
 
         // Try first move
         lm ^= BIT(firstMove);
-        black = doMove(originalBlack, originalWhite, firstMove);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, firstMove, black, white);
 
         // Recursive call and update alpha
         int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
@@ -212,8 +215,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
             lm ^= BIT(square);
 
             // Make move
-            black = doMove(originalBlack, originalWhite, square);
-            white = originalWhite & ~black;
+            DO_MOVE(originalBlack, originalWhite, square, black, white);
 
             // Store board, move, and number of opponent's legal moves
             arr[3 * moveIndex] = black;
@@ -246,8 +248,7 @@ int alphabeta(u64 black, u64 white, int depth, int alpha, int beta) {
             // Extract next legal move and make the move
             int index = CLZ(lm);
             lm ^= BIT(index);
-            black = doMove(originalBlack, originalWhite, index);
-            white = originalWhite & ~black;
+            DO_MOVE(originalBlack, originalWhite, index, black, white);
 
             // Recursive call, pvs, and update alpha
             int result = -alphabeta(white, black, depth - 1, -alpha - 1, -alpha);
@@ -315,8 +316,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
 
         // Try first move
         lm ^= BIT(move);
-        black = doMove(originalBlack, originalWhite, move);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, move, black, white);
 
         // Recursive call and update alpha
         int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
@@ -325,8 +325,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
     else {
         move = CLZ(lm);
         lm ^= BIT(move);
-        black = doMove(originalBlack, originalWhite, move);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, move, black, white);
         int result = -alphabeta(white, black, depth - 1, -beta, -alpha);
         alpha = (alpha > result) ? alpha : result;
     }
@@ -336,8 +335,7 @@ int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta) {
         // Extract next legal move and make the move
         u8 index = CLZ(lm);
         lm ^= BIT(index);
-        black = doMove(originalBlack, originalWhite, index);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, index, black, white);
 
         // Recursive call, pvs, and update alpha
         int result = -alphabeta(white, black, depth - 1, -alpha - 1, -alpha);
@@ -420,8 +418,7 @@ int endgameAlphabeta(u64 black, u64 white, u64 lm, int beta) {
     if (totalCount < STOP_USING_EVAL - ENDGAME_AB_DEPTH) {
         int abResult = alphabetaMove(originalBlack, originalWhite, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
         u8 move = EXTRACT_MOVE(abResult);
-        black = doMove(originalBlack, originalWhite, move);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, move, black, white);
         int result = -endgameAlphabeta(white, black, findLegalMoves(white, black), 1 - beta);
         if (result >= beta) {
             alpha = beta;
@@ -433,6 +430,62 @@ int endgameAlphabeta(u64 black, u64 white, u64 lm, int beta) {
         numLegalMoves--;
     }
 
+    #if 0
+    #define OPTIMISTIC_THRESHOLD 0.80
+    // The nn_eval in this conditional should actually use the loss-not loss neural net, not the win-not win neural net
+    if (totalCount == 50 && beta == 0 && nn_eval(black, white) > OPTIMISTIC_THRESHOLD) {
+        // We sort from least to greatest by the expected value of unnecessary nodes being searched
+        // We use the number of legal moves in the position after 1 move
+        // as our measure of the nodes searched in that line.
+        // A small offset using just this number of legal moves is also included to break ties.
+
+        // Array for boards and the (scaled) score mentioned above each gives
+        // Each "entry" is 2 * 8 (black and white boards) + 8 (score) = 24 bytes (or 3 u64's).
+        u64 arr[numLegalMoves * 3];
+
+        // Index to keep track of place in arrays
+        u8 moveIndex = 0;
+
+
+        // Loop through legal moves
+        while (lm) {
+            // Extract move
+            u8 square = CLZ(lm);
+            lm ^= BIT(square);
+
+            // Make move
+            DO_MOVE(originalBlack, originalWhite, square, black, white);
+
+            // Compute score
+            float lmCount = PC(findLegalMoves(white, black));
+            float score = nn_eval(white, black) * lmCount;
+            score += lmCount / 40;
+            score *= 10000;
+
+            // Store board, move, and number of opponent's legal moves
+            arr[3 * moveIndex] = black;
+            arr[3 * moveIndex + 1] = white;
+            arr[3 * moveIndex + 2] = score; // Converted to u64 here
+
+            // Update moveIndex
+            moveIndex++;
+        }
+
+        // Sort
+        qsort(arr, numLegalMoves, 3 * sizeof(u64), ffComp);
+
+        // Main alphabeta algorithm
+        for (size_t i = 0; i < numLegalMoves; i++) {
+            // Recursive call and update alpha
+            int result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], findLegalMoves(arr[3 * i + 1], arr[3 * i]), 1 - beta);
+            if (result >= beta) {
+                alpha = beta;
+                break;
+            }
+        }
+    }
+    else 
+    #endif 
     if (totalCount < STOP_SORTING_TC) {
         // The legal moves will be ordered so that moves giving the opponent
         // less mobility appear first.
@@ -451,8 +504,7 @@ int endgameAlphabeta(u64 black, u64 white, u64 lm, int beta) {
             lm ^= BIT(square);
 
             // Make move
-            black = doMove(originalBlack, originalWhite, square);
-            white = originalWhite & ~black;
+            DO_MOVE(originalBlack, originalWhite, square, black, white);
 
             // Store board, move, and number of opponent's legal moves
             arr[3 * moveIndex] = black;
@@ -490,8 +542,7 @@ int endgameAlphabeta(u64 black, u64 white, u64 lm, int beta) {
             lm ^= BIT(square);
 
             // Recursive call and update alpha
-            black = doMove(originalBlack, originalWhite, square);
-            white = originalWhite & ~black;
+            DO_MOVE(originalBlack, originalWhite, square, black, white);
             int result;
             if (totalCount == 61) {
                 result = -endgameAlphabeta62(white, black, findLegalMoves(white, black), 1 - beta);
@@ -562,8 +613,7 @@ int endgameAlphabeta63(u64 black, u64 white, int beta) {
     if (black != originalBlack) return PC(black) - 32; // Multiply times 2 if care about disc difference
     
     // Try white
-    white = doMove(white, black, square);
-    black &= ~white;
+    DO_MOVE_IN_PLACE(white, black, square);
 
     // Compute result
     return DD(black, white);
@@ -596,23 +646,22 @@ int endgameAlphabeta62(u64 black, u64 white, u64 lm, int beta) {
         if (PC(black & mask) >= 32 + beta) return factor * 1;
         if (PC(white & mask) >= 33 - beta) return factor * -1;
         
+        u64 black1, black2, white1, white2;
+
         // Make move
-        u64 black1 = doMove(black, white, square63);
-        u64 white1 = white & ~black1;
+        DO_MOVE(black, white, square63, black1, white1);
         int best = -endgameAlphabeta63(white1, black1, 1 - beta);
         if (best >= beta) return factor * beta;
 
         // Try other move
         square63 = CLZ(lm);
-        u64 black2 = doMove(black, white, square63);
-        u64 white2 = white & ~black2;
+        DO_MOVE(black, white, square63, black2, white2);
         int secondEval = -endgameAlphabeta63(white2, black2, 1 - beta);
         return factor * secondEval;
     }
 
     // Make move
-    black = doMove(black, white, square63);
-    white &= ~black;
+    DO_MOVE_IN_PLACE(black, white, square63);
     
     // Compute result
     return -factor * endgameAlphabeta63(white, black, 1 - beta);
@@ -646,8 +695,7 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
     if (totalCount < STOP_USING_EVAL - ENDGAME_AB_DEPTH) {
         int abResult = alphabetaMove(originalBlack, originalWhite, ENDGAME_AB_DEPTH, MIN_EVAL, MAX_EVAL);
         move = EXTRACT_MOVE(abResult);
-        black = doMove(originalBlack, originalWhite, move);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, move, black, white);
         result = -endgameAlphabeta(white, black, findLegalMoves(white, black), -alpha);
         alpha = (result > alpha) ? result : alpha;
 
@@ -678,8 +726,7 @@ int endgameAlphabetaMove(u64 black, u64 white, int alpha, int beta) {
         lm ^= BIT(square);
 
         // Make move
-        black = doMove(originalBlack, originalWhite, square);
-        white = originalWhite & ~black;
+        DO_MOVE(originalBlack, originalWhite, square, black, white);
 
         // Store board, move, and number of opponent's legal moves
         arr[3 * moveIndex] = black;

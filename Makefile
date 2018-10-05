@@ -53,7 +53,7 @@ fann.o: fann.c defs.h search.h board.h
 
 fann: fann.o board.o search.o tt.o nn.o hash.o
 	make simple
-	$(CC) $(CFLAGS) -o fann fann.o board.o search.o tt.o nn.o hash.o -lfann -lm
+	$(CC) $(CFLAGS_NO_PROFILE) -o fann fann.o board.o search.o tt.o nn.o hash.o -lfann -lm
 	strip fann
 
 timing_test.o: timing_test.c defs.h board.h search.h

@@ -34,6 +34,10 @@ double int_pow(double base, int exponent) {
     return base * y;
 }
 
+#define REPEATER(x) REPEAT_ ## x
+#define SHIFTER(dir) SHIFT_ ## dir
+#define FILTER(dir) dir ## _FILTER
+
 // Find legal moves function
 // Returns a bitboard of legal moves
 // It will find the legal moves for the color of 
@@ -42,101 +46,22 @@ u64 findLegalMoves(u64 black, u64 white) {
     u64 moves = 0;
     u64 w, t;
 
-    // RIGHT
-    w = white & RIGHT_FILTER;
-    t = w & SHIFT_RIGHT(black);
-    if (t) {
-        t |= w & SHIFT_RIGHT(t);
-        t |= w & SHIFT_RIGHT(t);
-        t |= w & SHIFT_RIGHT(t);
-        t |= w & SHIFT_RIGHT(t);
-        t |= w & SHIFT_RIGHT(t);
-        moves |= RIGHT_FILTER & SHIFT_RIGHT(t);
+    #define LM_DIR_ALG(dir) \
+    w = white & FILTER(dir);\
+    t = w & SHIFTER(dir)(black);\
+    if (t) {\
+        REPEAT_5(t |= w & SHIFTER(dir)(t))\
+        moves |= FILTER(dir) & SHIFTER(dir)(t);\
     }
 
-    // LEFT
-    w = white & LEFT_FILTER;
-    t = w & SHIFT_LEFT(black);
-    if (t) {
-        t |= w & SHIFT_LEFT(t);
-        t |= w & SHIFT_LEFT(t);
-        t |= w & SHIFT_LEFT(t);
-        t |= w & SHIFT_LEFT(t);
-        t |= w & SHIFT_LEFT(t);
-        moves |= LEFT_FILTER & SHIFT_LEFT(t);
-    }
-
-    // DOWN
-    w = white & DOWN_FILTER;
-    t = w & SHIFT_DOWN(black);
-    if (t) {
-        t |= w & SHIFT_DOWN(t);
-        t |= w & SHIFT_DOWN(t);
-        t |= w & SHIFT_DOWN(t);
-        t |= w & SHIFT_DOWN(t);
-        t |= w & SHIFT_DOWN(t);
-        moves |= DOWN_FILTER & SHIFT_DOWN(t);
-    }
-
-    // UP
-    w = white & UP_FILTER;
-    t = w & SHIFT_UP(black);
-    if (t) {
-        t |= w & SHIFT_UP(t);
-        t |= w & SHIFT_UP(t);
-        t |= w & SHIFT_UP(t);
-        t |= w & SHIFT_UP(t);
-        t |= w & SHIFT_UP(t);
-        moves |= UP_FILTER & SHIFT_UP(t);
-    }
-
-    // DOWN_RIGHT
-    w = white & DOWN_RIGHT_FILTER;
-    t = w & SHIFT_DOWN_RIGHT(black);
-    if (t) {
-        t |= w & SHIFT_DOWN_RIGHT(t);
-        t |= w & SHIFT_DOWN_RIGHT(t);
-        t |= w & SHIFT_DOWN_RIGHT(t);
-        t |= w & SHIFT_DOWN_RIGHT(t);
-        t |= w & SHIFT_DOWN_RIGHT(t);
-        moves |= DOWN_RIGHT_FILTER & SHIFT_DOWN_RIGHT(t);
-    }
-
-    // UP_RIGHT
-    w = white & UP_RIGHT_FILTER;
-    t = w & SHIFT_UP_RIGHT(black);
-    if (t) {
-        t |= w & SHIFT_UP_RIGHT(t);
-        t |= w & SHIFT_UP_RIGHT(t);
-        t |= w & SHIFT_UP_RIGHT(t);
-        t |= w & SHIFT_UP_RIGHT(t);
-        t |= w & SHIFT_UP_RIGHT(t);
-        moves |= UP_RIGHT_FILTER & SHIFT_UP_RIGHT(t);
-    }
-
-    // DOWN_LEFT
-    w = white & DOWN_LEFT_FILTER;
-    t = w & SHIFT_DOWN_LEFT(black);
-    if (t) {
-        t |= w & SHIFT_DOWN_LEFT(t);
-        t |= w & SHIFT_DOWN_LEFT(t);
-        t |= w & SHIFT_DOWN_LEFT(t);
-        t |= w & SHIFT_DOWN_LEFT(t);
-        t |= w & SHIFT_DOWN_LEFT(t);
-        moves |= DOWN_LEFT_FILTER & SHIFT_DOWN_LEFT(t);
-    }
-
-    // UP_LEFT
-    w = white & UP_LEFT_FILTER;
-    t = w & SHIFT_UP_LEFT(black);
-    if (t) {
-        t |= w & SHIFT_UP_LEFT(t);
-        t |= w & SHIFT_UP_LEFT(t);
-        t |= w & SHIFT_UP_LEFT(t);
-        t |= w & SHIFT_UP_LEFT(t);
-        t |= w & SHIFT_UP_LEFT(t);
-        moves |= UP_LEFT_FILTER & SHIFT_UP_LEFT(t);
-    }
+    LM_DIR_ALG(RIGHT)
+    LM_DIR_ALG(LEFT)
+    LM_DIR_ALG(UP)
+    LM_DIR_ALG(DOWN)
+    LM_DIR_ALG(UP_RIGHT)
+    LM_DIR_ALG(UP_LEFT)
+    LM_DIR_ALG(DOWN_RIGHT)
+    LM_DIR_ALG(DOWN_LEFT)
 
     return moves & ~(white | black);
 }
@@ -151,15 +76,23 @@ u64 doMove(u64 black, u64 white, u8 square) {
     u64 newblack = black;
     u64 filtered, n;
     
-    #define DMB(x, filter, shifter, shift_amount) n = bi; filtered = white & filter; n |= filtered & (n shifter shift_amount); if (n != bi) {for (size_t i = 1; i < (x); i++) n |= filtered & (n shifter shift_amount); C_OR(black & filter & (n shifter shift_amount), newblack, n);}
-    #define RIGHT(x) DMB(x, RIGHT_FILTER, >>, 1)
-    #define DOWN(x) DMB(x, DOWN_FILTER, >>, 8)
-    #define DOWN_RIGHT(x) DMB(x, DOWN_RIGHT_FILTER, >>, 9)
-    #define DOWN_LEFT(x) DMB(x, DOWN_LEFT_FILTER, >>, 7)
-    #define UP(x) DMB(x, UP_FILTER, <<, 8)
-    #define UP_LEFT(x) DMB(x, UP_LEFT_FILTER, <<, 9)
-    #define UP_RIGHT(x) DMB(x, UP_RIGHT_FILTER, <<, 7)
-    #define LEFT(x) DMB(x, LEFT_FILTER, << , 1)
+    #define DMB(x, dir) \
+    n = bi;\
+    filtered = white & FILTER(dir);\
+    n |= filtered & SHIFTER(dir)(n);\
+    if (n != bi) {\
+        REPEATER(x)(n |= filtered & SHIFTER(dir)(n));\
+        C_OR(black & FILTER(dir) & SHIFTER(dir)(n), newblack, n);\
+    }
+    // Perhaps these shouldn't be overloaded
+    #define RIGHT(x) DMB(x, RIGHT)
+    #define DOWN(x) DMB(x, DOWN)
+    #define DOWN_RIGHT(x) DMB(x, DOWN_RIGHT)
+    #define DOWN_LEFT(x) DMB(x, DOWN_LEFT)
+    #define UP(x) DMB(x, UP)
+    #define UP_LEFT(x) DMB(x, UP_LEFT)
+    #define UP_RIGHT(x) DMB(x, UP_RIGHT)
+    #define LEFT(x) DMB(x, LEFT)
 
     switch (square) {
         case 0:
@@ -693,72 +626,50 @@ int eval(u64 black, u64 white, u64 lmBlack) {
 }
 
 // Print eval information for debugging
-void printEval(u64 black, u64 white) {
+void printEvalToFile(FILE *f, u64 black, u64 white) {
     u64 lmBlack = findLegalMoves(black, white);
     #include "eval_code.c"
-    printf("frontier: %f\n", frontierWeight * eeF);
-    printf("mobility: %f\n", mobilityWeight * eeM);
-    printf("corners: %f\n", cornerWeight * eeC);
-    printf("ee %f\n", ee);
-    printf("factor %f\n", 1 / (1 + eeSumAbs / 400));
-    printf("Actual eval: %d\n", EVAL(black, white));
+    fprintf(f, "frontier: %f\n", frontierWeight * eeF);
+    fprintf(f, "mobility: %f\n", mobilityWeight * eeM);
+    fprintf(f, "corners: %f\n", cornerWeight * eeC);
+    fprintf(f, "ee %f\n", ee);
+    fprintf(f, "factor %f\n", 1 / (1 + eeSumAbs / 400));
+    fprintf(f, "Actual eval: %d\n", EVAL(black, white));
+}
+    
+void printEval(u64 black, u64 white) {
+    printEvalToFile(stdout, black, white);
 }
 
 void printEval2(u64 black, u64 white) {
-    u64 lmBlack = findLegalMoves(black, white);
-    #include "eval_code.c"
-    fprintf(stderr, "frontier: %f\n", frontierWeight * eeF);
-    fprintf(stderr, "mobility: %f\n", mobilityWeight * eeM);
-    fprintf(stderr, "corners: %f\n", cornerWeight * eeC);
-    fprintf(stderr, "ee %f\n", ee);
-    fprintf(stderr, "factor %f\n", 1 / (1 + eeSumAbs / 400));
-    fprintf(stderr, "Actual eval: %d\n", EVAL(black, white));
+    printEvalToFile(stderr, black, white);
 }
 
 // Print board
-void printBoard(u64 black, u64 white) {
+void printBoardToFile(FILE *f, u64 black, u64 white) {
     char s[200];
     u8 nextIndex = 0;
-    printf("+--------+\n");
+    fprintf(f, "+--------+\n");
     for (u8 i = 0; i < 8; i++) {
-        s[nextIndex] = '|';
-        nextIndex++;
+        s[nextIndex++] = '|';
         for (u8 j = 0; j < 8; j++) {
-            if (GET(black, j, i)) s[nextIndex] = 'X';
-            else if (GET(white, j, i)) s[nextIndex] = 'O';
-            else s[nextIndex] = ' ';
-            nextIndex++;
+            if (GET(black, j, i)) s[nextIndex++] = 'X';
+            else if (GET(white, j, i)) s[nextIndex++] = 'O';
+            else s[nextIndex++] = ' ';
         }
-        s[nextIndex] = '|';
-        nextIndex++;
-        s[nextIndex] = '\n';
-        nextIndex++;
+        s[nextIndex++] = '|';
+        s[nextIndex++] = '\n';
     }
     s[nextIndex] = '\0';
 
-    printf("%s", s);
-    printf("+--------+\n");
+    fprintf(f, "%s", s);
+    fprintf(f, "+--------+\n");
 }
-void printBoard2(u64 black, u64 white) {
-    char s[200];
-    u8 nextIndex = 0;
-    fprintf(stderr, "+--------+\n");
-    for (u8 i = 0; i < 8; i++) {
-        s[nextIndex] = '|';
-        nextIndex++;
-        for (u8 j = 0; j < 8; j++) {
-            if (GET(black, j, i)) s[nextIndex] = 'X';
-            else if (GET(white, j, i)) s[nextIndex] = 'O';
-            else s[nextIndex] = ' ';
-            nextIndex++;
-        }
-        s[nextIndex] = '|';
-        nextIndex++;
-        s[nextIndex] = '\n';
-        nextIndex++;
-    }
-    s[nextIndex] = '\0';
 
-    fprintf(stderr, "%s", s);
-    fprintf(stderr, "+--------+\n");
+void printBoard(u64 black, u64 white) {
+    printBoardToFile(stdout, black, white);
+}
+
+void printBoard2(u64 black, u64 white) {
+    printBoardToFile(stderr, black, white);
 }

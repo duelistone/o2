@@ -52,21 +52,9 @@ u32 boardHash(u64 black, u64 white) {
     u32 h = 2166136261u;
      
     // Take one octet of data at a time
-    h = (h ^ (u8) black) * 16777619; black >>= 8;
-    h = (h ^ (u8) black) * 16777619; black >>= 8;
-    h = (h ^ (u8) black) * 16777619; black >>= 8;
-    h = (h ^ (u8) black) * 16777619; black >>= 8;
-    h = (h ^ (u8) black) * 16777619; black >>= 8;
-    h = (h ^ (u8) black) * 16777619; black >>= 8;
-    h = (h ^ (u8) black) * 16777619; black >>= 8;
+    REPEAT_7(h = (h ^ (u8) black) * 16777619; black >>= 8)
     h = (h ^ (u8) black) * 16777619;
-    h = (h ^ (u8) white) * 16777619; white >>= 8;
-    h = (h ^ (u8) white) * 16777619; white >>= 8;
-    h = (h ^ (u8) white) * 16777619; white >>= 8;
-    h = (h ^ (u8) white) * 16777619; white >>= 8;
-    h = (h ^ (u8) white) * 16777619; white >>= 8;
-    h = (h ^ (u8) white) * 16777619; white >>= 8;
-    h = (h ^ (u8) white) * 16777619; white >>= 8;
+    REPEAT_7(h = (h ^ (u8) white) * 16777619; white >>= 8)
     h = (h ^ (u8) white) * 16777619;
 
     // Trim hash down to HASH_LEN bits
@@ -76,94 +64,3 @@ u32 boardHash(u64 black, u64 white) {
 }
 #endif
 
-#if 0
-#define MIX(a,b,c) \
-{ \
-    a -= b; a -= c; a ^= (c >> 13); \
-    b -= c; b -= a; b ^= (a << 8); \
-    c -= a; c -= b; c ^= (b >> 13); \
-    a -= b; a -= c; a ^= (c >> 12); \
-    b -= c; b -= a; b ^= (a << 16); \
-    c -= a; c -= b; c ^= (b >> 5); \
-    a -= b; a -= c; a ^= (c >> 3); \
-    b -= c; b -= a; b ^= (a << 10); \
-    c -= a; c -= b; c ^= (b >> 15); \
-}
-
-u32 boardHash(u64 black, u64 white) {
-    unsigned a, b;
-    unsigned c = 274762803; // Can be changed
-    unsigned len = 16;
-    unsigned tc = TC(black, white);
-
-    // Extract bytes
-    u8 bytes[16];
-    u8 *k = bytes;
-    int loopNumber = 0;
-    while (black) {
-        k[2 * loopNumber] = black & 0xFF;
-        k[2 * loopNumber + 1] = white & 0xFF;
-        black >>= 8;
-        white >>= 8;
-        loopNumber++;
-    }
-
-    a = b = 0x9e3779b9;
-
-    a += (k[0] + ((unsigned)k[1] << 8) + ((unsigned)k[2] << 16) + ((unsigned)k[3] << 24));
-    b += (k[4] + ((unsigned)k[5] << 8) + ((unsigned)k[6] << 16) + ((unsigned)k[7] << 24));
-    c += (k[8] + ((unsigned)k[9] << 8) + ((unsigned)k[10] << 16) + ((unsigned)k[11] << 24));
-
-    MIX(a, b, c);
-
-    k = k + 12;
-    len -= 12;
-
-    c += tc;
-
-    switch (len)
-    {
-    case 11: c += ((unsigned)k[10] << 24);
-    case 10: c += ((unsigned)k[9] << 16);
-    case 9: c += ((unsigned)k[8] << 8);
-    /* First byte of c reserved for total count */
-    case 8: b += ((unsigned)k[7] << 24);
-    case 7: b += ((unsigned)k[6] << 16);
-    case 6: b += ((unsigned)k[5] << 8);
-    case 5: b += k[4];
-    case 4: a += ((unsigned)k[3] << 24);
-    case 3: a += ((unsigned)k[2] << 16);
-    case 2: a += ((unsigned)k[1] << 8);
-    case 1: a += k[0];
-    }
-
-    MIX(a, b, c);
-
-    return (c >> 24) ^ (c & 0xFFFFFFu);
-}
-    
-// Uses One-at-a-time hash
-u32 boardHash(u64 black, u64 white) {
-    u32 h = 0;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6); black >>= 8;
-    h += (u8) white; h += (h << 10); h ^= (h >> 6); white >>= 8;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6); black >>= 8;
-    h += (u8) white; h += (h << 10); h ^= (h >> 6); white >>= 8;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6); black >>= 8;
-    h += (u8) white; h += (h << 10); h ^= (h >> 6); white >>= 8;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6); black >>= 8;
-    h += (u8) white; h += (h << 10); h ^= (h >> 6); white >>= 8;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6); black >>= 8;
-    h += (u8) white; h += (h << 10); h ^= (h >> 6); white >>= 8;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6); black >>= 8;
-    h += (u8) white; h += (h << 10); h ^= (h >> 6); white >>= 8;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6); black >>= 8;
-    h += (u8) white; h += (h << 10); h ^= (h >> 6); white >>= 8;
-    h += (u8) black; h += (h << 10); h ^= (h >> 6);
-    h += (u8) white; h += (h << 10); h ^= (h >> 6);
-    h += (h << 3); h ^= (h >> 11); h += (h << 15);
-
-    return (h >> 24) ^ (h & 0xFFFFFFu);
-}
-
-#endif

@@ -187,8 +187,8 @@
 #define NULL_MOVE 64
 
 // Macro to extract move and score from the alphabetaMove functions
-#define EXTRACT_EVAL(x) ((x & ~0xFF) / 256)
-#define EXTRACT_MOVE(x) (x & 0xFF)
+#define EXTRACT_EVAL(x) (((x) & ~0xFF) / 256)
+#define EXTRACT_MOVE(x) ((x) & 0xFF)
 
 // Special constant for experimental mobility score formula
 #define TENTH_POWER_OF_FOUR 1.148698
@@ -236,12 +236,13 @@ for (int i = 1; i <= 12; i++) {\
 }
 
 // For neural network
+// Counter changed from i to help prevent unfortunate name collisions
 #define BOARD_TO_INPUT_LIST(black, white, inputList) {\
     u64 empty = ~((black) | (white));\
-    for (int i = 0; i < 64; i++) {\
-        *((inputList) + 3 * i) = (black) & BIT(i);\
-        *((inputList) + 3 * i + 1) = (white) & BIT(i);\
-        *((inputList) + 3 * i + 2) = (empty) & BIT(i);\
+    for (int asdf = 0; asdf < 64; asdf++) {\
+        *((inputList) + 3 * asdf) = (((black) & BIT(asdf)) != 0);\
+        *((inputList) + 3 * asdf + 1) = (((white) & BIT(asdf)) != 0);\
+        *((inputList) + 3 * asdf + 2) = (((empty) & BIT(asdf)) != 0);\
     }\
 }
 
@@ -270,5 +271,20 @@ for (int i = 1; i <= 12; i++) {\
 
 // Eval macro
 #define EVAL(b, w) (eval(b, w, findLegalMoves(b, w)))
+
+// Do move macro
+#define DO_MOVE(b, w, square, out_b, out_w) out_b = doMove(b, w, square);\
+out_w = (w) &~ out_b;
+
+#define DO_MOVE_IN_PLACE(b, w, square) DO_MOVE(b, w, square, b, w)
+
+// Repeat macros
+#define REPEAT_1(x) x;
+#define REPEAT_2(x) x;x;
+#define REPEAT_3(x) x;x;x;
+#define REPEAT_4(x) x;x;x;x;
+#define REPEAT_5(x) x;x;x;x;x;
+#define REPEAT_6(x) x;x;x;x;x;x;
+#define REPEAT_7(x) x;x;x;x;x;x;x;
 
 #endif

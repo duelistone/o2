@@ -3,7 +3,7 @@
 void initializeNN() {
     for (int i = 5; i < 64; i++) {
         char file_name[30];
-        int len = sprintf(file_name, "best_nn_%d_5_layer", i);
+        sprintf(file_name, "best_nn_%d_5_layer", i);
         if (access(file_name, F_OK) != -1) {
             anns[i] = fann_create_from_file(file_name);
         }
