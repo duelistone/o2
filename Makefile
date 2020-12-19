@@ -1,29 +1,32 @@
-CC = gcc
-CFLAGS_NO_PROFILE = -Ofast -Wall -march=native -ffast-math
-CFLAGS = $(CFLAGS_NO_PROFILE) -fprofile-use
+CC=gcc
+CFLAGS=-Ofast -Wall -march=native -ffast-math -fprofile-use
+PROFILE_FLAGS=-fprofile-generate -pg
+LIBS=-lm
+TEST_LIBS=-lcheck -lsubunit -lpthread -lrt
 
 all: profile
 
-profile:
-	make clean
-	make -f Makefile-generate-profile
-	make clean
-	make test
-	make engine
+profile: clean profile-build profile-clean test engine
 
-# Requires make clean first if previously using profile
+# Sometimes requires make clean first if previously using profile
 simple: main.o board.o search.o hash.o tt.o test.o nn.o
-	$(CC) $(CFLAGS_NO_PROFILE) -o engine main.o board.o search.o hash.o tt.o nn.o -lm
-	$(CC) $(CFLAGS_NO_PROFILE) -o test test.o search.o board.o hash.o tt.o -lcheck -lsubunit nn.o -lm -lrt -lpthread
+	$(CC) $(CFLAGS) -o engine main.o board.o search.o hash.o tt.o nn.o $(LIBS)
+	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o nn.o $(LIBS) $(TEST_LIBS)
 	strip engine
 	strip test
+
+profile-build: main.c board.c search.c hash.c tt.c nn.c test.c
+	$(CC) $(CFLAGS) $(PROFILE_FLAGS) -o engine main.c board.c search.c hash.c tt.c nn.c $(LIBS)
+	$(CC) $(CFLAGS) $(PROFILE_FLAGS) -o test test.c search.c board.c hash.c tt.c nn.c $(LIBS) $(TEST_LIBS)
+	bash -c "time ./test"
+	gprof test > profile
 
 engine: main.o board.o search.o hash.o tt.o nn.o
 	$(CC) $(CFLAGS) -o engine main.o board.o search.o hash.o tt.o nn.o -lm
 	strip engine
 
-test: test.o search.o board.o hash.o tt.o nn.o
-	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o nn.o -lcheck -lsubunit -lm -lrt -lpthread 
+test: test.o board.o search.o hash.o tt.o nn.o
+	$(CC) $(CFLAGS) -o test test.o search.o board.o hash.o tt.o nn.o $(LIBS) $(TEST_LIBS)
 	strip test
 	bash -c "time ./test"
 
@@ -48,13 +51,10 @@ nn.o: nn.c nn.h defs.h
 main.o: main.c search.h board.h defs.h tt.h nn.h
 	$(CC) $(CFLAGS) -c main.c
 
-timing_test.o: timing_test.c defs.h board.h search.h
-	$(CC) $(CFLAGS) -c timing_test.c
-
-timing_test: timing_test.o search.o board.o tt.o nn.o hash.o
-	$(CC) $(CFLAGS) -o timing_test timing_test.o search.o board.o tt.o nn.o hash.o
+profile-clean:
+	-rm *.o engine test
 
 clean:
 	-rm *.o *.gcda engine test
 
-.PHONY: all profile clean simple
+.PHONY: all profile clean profile-clean simple
