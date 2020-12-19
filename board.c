@@ -1,6 +1,9 @@
 // board.c
 
 #include "board.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
 // Global variable needed for eval function
 // Designed so that entry at 35 * i + j is 1 - (1 - abs(i - j - 1) / 100.0) ** (2 ** ((35 - i - j) / 50.0))

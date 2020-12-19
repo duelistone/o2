@@ -1,4 +1,5 @@
 #include "tt.h"
+#include <string.h>
 
 void initializeTT() {
     // Initializing global arrays

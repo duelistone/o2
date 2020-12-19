@@ -1,7 +1,9 @@
 #include "search.h"
+#include "board.h"
+#include "hash.h"
+#include "tt.h"
 #include <stdlib.h>
 #include <check.h>
-#include "nn.h"
 
 #define FFO_ENDGAME_TESTS 1
 #define TEST_FORKING 0
@@ -671,8 +673,6 @@ Suite * othello_suite(void)
 int main(void) {
     // Random seed
     srand(38980);
-
-    // initializeNN();
 
     int number_failed;
     Suite *s;

@@ -2,7 +2,9 @@
 
 // Executable for othello engine following Caltech's CS2 protocol
 
+#include "board.h"
 #include "search.h"
+#include "tt.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,7 +13,6 @@
 int main(int argc, char **argv) {
     // Initialize transposition table
     initializeTT();
-    initializeNN();
 
     // Setup board and move pointers
     u64 black, white;

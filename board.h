@@ -8,10 +8,7 @@
 // However, no struct will be defined here...two or three arguments 
 // should be passed instead.
 
-#include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <math.h>
 #include "defs.h"
 
 u64 findLegalMoves(u64 black, u64 white);

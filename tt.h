@@ -2,7 +2,6 @@
 #define __TT_H__
 
 #include <stdint.h>
-#include <string.h>
 #include "defs.h"
 
 #define COUNT_NODES 0

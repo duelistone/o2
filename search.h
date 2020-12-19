@@ -3,13 +3,8 @@
 #ifndef __SEARCH_H__
 #define __SEARCH_H__
 
-#include "board.h"
-#include "tt.h"
-#include "nn.h"
-#include "hash.h"
-#include <string.h>
-#include <assert.h>
-#include <x86intrin.h>
+#include "defs.h"
+#include <stdint.h>
 
 int alphabeta(u64 black, u64 white, int depth, int alpha, int beta);
 int alphabetaMove(u64 black, u64 white, int depth, int alpha, int beta);
