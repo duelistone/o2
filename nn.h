@@ -2,7 +2,7 @@
 #define __NN_H__
 
 #include "defs.h"
-#include <fann.h>
+#include <tensorflow/c/c_api.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>

@@ -46,6 +46,9 @@ u64 findLegalMoves(u64 black, u64 white) {
     u64 moves = 0;
     u64 w, t;
 
+    // TODO: Try out Kogge-Stone Algorithm here
+    // See https://www.chessprogramming.org/Kogge-Stone_Algorithm
+
     #define LM_DIR_ALG(dir) \
     w = white & FILTER(dir);\
     t = w & SHIFTER(dir)(black);\

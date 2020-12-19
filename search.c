@@ -430,62 +430,6 @@ int endgameAlphabeta(u64 black, u64 white, u64 lm, int beta) {
         numLegalMoves--;
     }
 
-    #if 0
-    #define OPTIMISTIC_THRESHOLD 0.80
-    // The nn_eval in this conditional should actually use the loss-not loss neural net, not the win-not win neural net
-    if (totalCount == 50 && beta == 0 && nn_eval(black, white) > OPTIMISTIC_THRESHOLD) {
-        // We sort from least to greatest by the expected value of unnecessary nodes being searched
-        // We use the number of legal moves in the position after 1 move
-        // as our measure of the nodes searched in that line.
-        // A small offset using just this number of legal moves is also included to break ties.
-
-        // Array for boards and the (scaled) score mentioned above each gives
-        // Each "entry" is 2 * 8 (black and white boards) + 8 (score) = 24 bytes (or 3 u64's).
-        u64 arr[numLegalMoves * 3];
-
-        // Index to keep track of place in arrays
-        u8 moveIndex = 0;
-
-
-        // Loop through legal moves
-        while (lm) {
-            // Extract move
-            u8 square = CLZ(lm);
-            lm ^= BIT(square);
-
-            // Make move
-            DO_MOVE(originalBlack, originalWhite, square, black, white);
-
-            // Compute score
-            float lmCount = PC(findLegalMoves(white, black));
-            float score = nn_eval(white, black) * lmCount;
-            score += lmCount / 40;
-            score *= 10000;
-
-            // Store board, move, and number of opponent's legal moves
-            arr[3 * moveIndex] = black;
-            arr[3 * moveIndex + 1] = white;
-            arr[3 * moveIndex + 2] = score; // Converted to u64 here
-
-            // Update moveIndex
-            moveIndex++;
-        }
-
-        // Sort
-        qsort(arr, numLegalMoves, 3 * sizeof(u64), ffComp);
-
-        // Main alphabeta algorithm
-        for (size_t i = 0; i < numLegalMoves; i++) {
-            // Recursive call and update alpha
-            int result = -endgameAlphabeta(arr[3 * i + 1], arr[3 * i], findLegalMoves(arr[3 * i + 1], arr[3 * i]), 1 - beta);
-            if (result >= beta) {
-                alpha = beta;
-                break;
-            }
-        }
-    }
-    else 
-    #endif 
     if (totalCount < STOP_SORTING_TC) {
         // The legal moves will be ordered so that moves giving the opponent
         // less mobility appear first.

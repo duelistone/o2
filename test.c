@@ -1,7 +1,7 @@
 #include "search.h"
 #include <stdlib.h>
 #include <check.h>
-#include "eval_error.h"
+#include "nn.h"
 
 #define FFO_ENDGAME_TESTS 1
 #define TEST_FORKING 0
@@ -252,16 +252,17 @@ START_TEST(doMove_no_legal_moves)
 }
 END_TEST
 
+#if 0
 START_TEST(betterPlayer_1)
 {
     u64 black = D3 | C4 | D4 | E4 | D5 | D6;
     u64 white = C3 | A5 | B5 | C5 | E5;
     ck_assert_int_lt(EVAL(white, black), 0);
     ck_assert_int_lt(alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
+    printBoard(black, white);
 }
 END_TEST
 
-#if 0
 START_TEST(betterPlayer_2)
 {
     u64 black = E2 | D3 | B5 | C5 | D5 | C6;
@@ -270,7 +271,6 @@ START_TEST(betterPlayer_2)
     ck_assert_int_lt(alphabeta(black, white, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
-#endif
 
 START_TEST(betterPlayer_3)
 {
@@ -280,6 +280,7 @@ START_TEST(betterPlayer_3)
     ck_assert_int_lt(alphabeta(white, black, 4, MIN_EVAL, MAX_EVAL), 0);
 }
 END_TEST
+#endif
 
 START_TEST(alphabeta_2nd_move)
 {
@@ -300,17 +301,6 @@ START_TEST(alphabeta_2nd_move)
     ck_assert_int_le(result1, EVAL(blackPerp, whitePerp));
 }
 END_TEST
-
-#if 0
-START_TEST(frontierScore_early_position)
-{
-    u64 black = D3 | C4 | E4 | F4 | C5 | E6;
-    u64 white = D4 | D5 | E5 | F5 | D6;
-    ck_assert(frontierScore(black, white, 0) == 24 / (3 * 11) + (6) / 8.0);
-    ck_assert(frontierScore(white, black, 0) == 12 / (3 * 11) + (5) / 8.0);
-}
-END_TEST
-#endif
 
 START_TEST(bad_midgame_position_1)
 {
@@ -637,7 +627,7 @@ Suite * othello_suite(void)
     ADD_TEST(live_othello_7);
     ADD_TEST(live_othello_8);
     ADD_TEST(live_othello_9);
-    //ADD_TEST(live_othello_10);
+    ADD_TEST(live_othello_10);
     ADD_TEST(live_othello_11);
     ADD_TEST(live_othello_12);
     ADD_TEST(alphabeta_no_lm);
@@ -645,10 +635,11 @@ Suite * othello_suite(void)
     ADD_TEST(legal_moves_totalCount_62);
     ADD_TEST(doMove_initial_position);
     ADD_TEST(doMove_no_legal_moves);
-    //ADD_TEST(frontierScore_early_position);
+    #if 0
     ADD_TEST(betterPlayer_1);
-    //ADD_TEST(betterPlayer_2);
+    ADD_TEST(betterPlayer_2);
     ADD_TEST(betterPlayer_3);
+    #endif
     ADD_TEST(alphabeta_2nd_move);
     ADD_TEST(bad_opening_position_1);
     ADD_TEST(bad_midgame_position_low_mobility);
@@ -681,7 +672,7 @@ int main(void) {
     // Random seed
     srand(38980);
 
-    initializeNN();
+    // initializeNN();
 
     int number_failed;
     Suite *s;

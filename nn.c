@@ -5,7 +5,7 @@ void initializeNN() {
         char file_name[30];
         sprintf(file_name, "best_nn_%d_5_layer", i);
         if (access(file_name, F_OK) != -1) {
-            anns[i] = fann_create_from_file(file_name);
+            // TODO
         }
         else {
             anns[i] = NULL;
@@ -14,13 +14,6 @@ void initializeNN() {
 }
 
 float nn_eval(u64 black, u64 white) {
-    // Form input list
-    fann_type inputList[64 * 3];
-    BOARD_TO_INPUT_LIST(black, white, inputList);
-
-    // Use correct fann and run
-    assert(anns[TC(black, white)] != NULL);
-    fann_type * output = fann_run(anns[TC(black, white)], inputList);
-
-    return output[0];
+    // TODO
+    return 0;
 }
