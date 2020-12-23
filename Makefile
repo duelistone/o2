@@ -15,7 +15,7 @@ simple: main.o board.o search.o hash.o tt.o test.o
 	strip engine
 	strip test
 
-profile-build: main.c board.c search.c hash.c tt.c test.c
+profile-build: main.c board.c search.c hash.c tt.c test.c board.h search.h hash.h tt.h defs.h
 	$(CC) $(CFLAGS) $(PROFILE_FLAGS) -o engine main.c board.c search.c hash.c tt.c $(LIBS)
 	$(CC) $(CFLAGS) $(PROFILE_FLAGS) -o test test.c search.c board.c hash.c tt.c $(LIBS) $(TEST_LIBS)
 	bash -c "time ./test"
