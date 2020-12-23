@@ -13,4 +13,3 @@ This program uses the popcount and clz (count leading zeros) instructions very f
 The engine accepts lines of the form "x y t", where (x, y) are the coordinates of the opponent's move (indices starting with 0), and t is the time remaining for the program. As the engine does not currently have time management, the t parameter is currently ignored. A passing move is represented by (-1, -1). If the engine is supposed to go first, the first move should be a passing move.
 
 The first line of each output is of the form "x y", signalling the engine's move. The rest of the lines of output corresponding for each move are currently for debugging purposes and can be ignored.
-
